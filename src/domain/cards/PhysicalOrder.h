@@ -14,6 +14,7 @@ namespace tcgprint::cards {
 inline constexpr std::size_t MaxPhysicalCardsPerExport = 500;
 
 using PhysicalInstanceId = std::uint64_t;
+inline constexpr PhysicalInstanceId MaxPersistedPhysicalInstanceId = 9007199254740991ULL;
 
 struct PhysicalInstanceRef final
 {

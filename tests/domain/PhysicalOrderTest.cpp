@@ -22,6 +22,7 @@ private slots:
         QVERIFY(!parsePhysicalInstanceIdString("instance-0"));
         QVERIFY(!parsePhysicalInstanceIdString("instance-01"));
         QVERIFY(!parsePhysicalInstanceIdString("card-42"));
+        QVERIFY(!parsePhysicalInstanceIdString("instance-9007199254740992"));
     }
 
     void createsDeterministicLegacyOrder()

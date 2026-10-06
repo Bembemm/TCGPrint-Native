@@ -238,7 +238,7 @@ cards::PhysicalOrder parsePhysicalOrder(
     const double nextNumber = nextValue.toDouble();
     if (
         nextNumber < 1
-        || nextNumber > static_cast<double>(std::numeric_limits<cards::PhysicalInstanceId>::max())
+        || nextNumber > static_cast<double>(cards::MaxPersistedPhysicalInstanceId)
     ) {
         invalid("snapshot.physicalOrder.nextInstanceId must be a positive integer.");
     }

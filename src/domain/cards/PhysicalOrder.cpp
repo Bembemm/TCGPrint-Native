@@ -70,7 +70,7 @@ PhysicalInstanceRef newReference(
     const std::string& workingCardId
 )
 {
-    if (nextInstanceId < 1) {
+    if (nextInstanceId < 1 || nextInstanceId > MaxPersistedPhysicalInstanceId) {
         throw PhysicalOrderError(
             PhysicalOrderErrorCode::InvalidPhysicalOrder,
             "The next physical instance ID must be positive."
@@ -140,6 +140,7 @@ std::optional<PhysicalInstanceId> parsePhysicalInstanceIdString(
         result.ec != std::errc{}
         || result.ptr != digits.data() + digits.size()
         || value < 1
+        || value > MaxPersistedPhysicalInstanceId
     ) {
         return std::nullopt;
     }
@@ -195,7 +196,7 @@ PhysicalOrder validatePhysicalOrder(
     PhysicalInstanceId maxId = 0;
 
     for (const PhysicalInstanceRef& instance : order.instances) {
-        if (instance.id < 1) {
+        if (instance.id < 1 || instance.id > MaxPersistedPhysicalInstanceId) {
             throw PhysicalOrderError(
                 PhysicalOrderErrorCode::InvalidPhysicalInstanceId,
                 "Physical instance ID is malformed."
@@ -264,7 +265,7 @@ PhysicalOrder reconcilePhysicalOrder(
             continue;
         }
 
-        if (instance.id == std::numeric_limits<PhysicalInstanceId>::max()) {
+        if (instance.id >= MaxPersistedPhysicalInstanceId) {
             continue;
         }
 
