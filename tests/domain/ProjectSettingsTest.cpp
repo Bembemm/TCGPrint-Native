@@ -32,6 +32,13 @@ private slots:
         QCOMPARE(settings.cardFormat.trimWidth.value(), 63.5);
         QCOMPARE(settings.cardFormat.trimHeight.value(), 88.9);
         QCOMPARE(settings.cardFormat.cornerRadius.value(), 3.175);
+        QCOMPARE(settings.cutGuides.trim.enabled, false);
+        QCOMPARE(settings.cutGuides.trim.fullExtent, false);
+        QCOMPARE(settings.cutGuides.trim.extent.value(), 1.0);
+        QCOMPARE(settings.cutGuides.trim.color, GuideColor::Blue);
+        QCOMPARE(settings.cutGuides.external.enabled, false);
+        QCOMPARE(settings.cutGuides.external.strokeWidthPt, 0.3);
+        QCOMPARE(settings.cutGuides.external.color, GuideColor::Black);
         QCOMPARE(
             settings.exportContentMode,
             ExportContentMode::FrontOnly
@@ -86,6 +93,24 @@ private slots:
             validateProjectPrintSettings(settings),
             ProjectSettingsError
         );
+    }
+
+    void rejectsInvalidCutGuideGeometry()
+    {
+        ProjectPrintSettings settings =
+            ProjectPrintSettings::defaults();
+
+        settings.cutGuides.external.strokeWidthPt = 0.0;
+
+        try {
+            validateProjectPrintSettings(settings);
+            QFAIL("Expected cut guide validation failure.");
+        } catch (const ProjectSettingsError& error) {
+            QCOMPARE(
+                error.code(),
+                ProjectSettingsErrorCode::InvalidCutGuides
+            );
+        }
     }
 
     void rejectsCornerRadiusPastHalfSmallerDimension()
