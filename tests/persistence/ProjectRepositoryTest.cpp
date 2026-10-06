@@ -36,7 +36,7 @@ struct TestDatabase final
     }
 };
 
-ProjectSnapshotCompat sampleSnapshot(QString marker = QStringLiteral("initial"))
+ProjectSnapshotCompat sampleSnapshot(double bleedMm = 0.625)
 {
     const QByteArray json = QString(R"JSON({
       "projectSchemaVersion": 6,
@@ -47,7 +47,7 @@ ProjectSnapshotCompat sampleSnapshot(QString marker = QStringLiteral("initial"))
           "order": 0,
           "selectedArtworkByFace": {
             "front": {
-              "candidateId": "%1",
+              "candidateId": "custom:front",
               "source": "custom",
               "identityId": null,
               "faceId": "front"
@@ -56,9 +56,8 @@ ProjectSnapshotCompat sampleSnapshot(QString marker = QStringLiteral("initial"))
         }
       ],
       "settings": {
-        "bleedMm": 0.625,
-        "roundedCorners": false,
-        "marker": "%1"
+        "bleedMm": %1,
+        "roundedCorners": false
       },
       "physicalOrder": {
         "nextInstanceId": 2,
@@ -67,7 +66,7 @@ ProjectSnapshotCompat sampleSnapshot(QString marker = QStringLiteral("initial"))
         ]
       }
     })JSON")
-        .arg(marker)
+        .arg(bleedMm, 0, 'f', 3)
         .toUtf8();
 
     return deserializeProjectSnapshot(json);
@@ -103,8 +102,8 @@ private slots:
             repository.open(created.metadata.id);
         QCOMPARE(reopened.metadata.revision, 1);
         QCOMPARE(
-            reopened.snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("initial")
+            reopened.snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            0.625
         );
     }
 
@@ -119,13 +118,13 @@ private slots:
         const ProjectRecord saved = repository.save(
             created.metadata.id,
             1,
-            sampleSnapshot(QStringLiteral("saved"))
+            sampleSnapshot(0.750)
         );
 
         QCOMPARE(saved.metadata.revision, 2);
         QCOMPARE(
-            saved.snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("saved")
+            saved.snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            0.750
         );
 
         try {
@@ -133,7 +132,7 @@ private slots:
                 repository.save(
                     created.metadata.id,
                     1,
-                    sampleSnapshot(QStringLiteral("stale"))
+                    sampleSnapshot(0.875)
                 )
             );
             QFAIL("Expected stale revision conflict.");
@@ -159,7 +158,7 @@ private slots:
             repository.stageRecovery(
                 created.metadata.id,
                 1,
-                sampleSnapshot(QStringLiteral("recovered"))
+                sampleSnapshot(1.000)
             );
 
         QCOMPARE(recovery.baseRevision, 1);
@@ -168,8 +167,8 @@ private slots:
             repository.readRecovery(created.metadata.id);
         QVERIFY(reread.has_value());
         QCOMPARE(
-            reread->snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("recovered")
+            reread->snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            1.000
         );
 
         const ProjectRecord promoted =
@@ -194,7 +193,7 @@ private slots:
             repository.save(
                 created.metadata.id,
                 1,
-                sampleSnapshot(QStringLiteral("saved"))
+                sampleSnapshot(0.750)
             )
         );
 
@@ -203,7 +202,7 @@ private slots:
                 repository.stageRecovery(
                     created.metadata.id,
                     1,
-                    sampleSnapshot(QStringLiteral("stale-recovery"))
+                    sampleSnapshot(1.125)
                 )
             );
             QFAIL("Expected recovery revision conflict.");
@@ -233,8 +232,8 @@ private slots:
             QStringLiteral("Original (cópia)")
         );
         QCOMPARE(
-            duplicate.snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("initial")
+            duplicate.snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            0.625
         );
         QCOMPARE(repository.list().size(), std::size_t{2});
     }
@@ -250,7 +249,7 @@ private slots:
             repository.stageRecovery(
                 created.metadata.id,
                 1,
-                sampleSnapshot(QStringLiteral("recover-me"))
+                sampleSnapshot(1.250)
             )
         );
 
@@ -276,7 +275,7 @@ private slots:
             repository.stageRecovery(
                 source.metadata.id,
                 1,
-                sampleSnapshot(QStringLiteral("recovered-copy"))
+                sampleSnapshot(1.375)
             )
         );
 
@@ -290,8 +289,8 @@ private slots:
             QStringLiteral("Source (recuperado)")
         );
         QCOMPARE(
-            copy.snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("recovered-copy")
+            copy.snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            1.375
         );
         QVERIFY(!repository.readRecovery(source.metadata.id).has_value());
         QCOMPARE(repository.list().size(), std::size_t{2});

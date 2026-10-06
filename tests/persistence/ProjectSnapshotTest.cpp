@@ -222,7 +222,7 @@ private slots:
     void promotesLegacySnapshotToSerializedV6()
     {
         const QByteArray legacy = R"JSON({
-          "projectSchemaVersion": 3,
+          "projectSchemaVersion": 1,
           "cards": [
             {
               "id": "card-a",
@@ -233,10 +233,12 @@ private slots:
             }
           ],
           "settings": {
-            "bleedMm": 0.625,
-            "roundedCorners": false,
-            "cutGuides": {},
-            "legacySetting": "preserved"
+            "bleedMm": 0.75,
+            "roundedCorners": true,
+            "cutGuides": {
+              "trim": {"enabled": true},
+              "external": {"enabled": false}
+            }
           }
         })JSON";
 
@@ -258,6 +260,46 @@ private slots:
         );
         QVERIFY(root.contains(QStringLiteral("physicalOrder")));
 
+        const QJsonObject settings =
+            root.value(QStringLiteral("settings")).toObject();
+
+        QCOMPARE(
+            settings.value(QStringLiteral("bleedMm")).toDouble(),
+            0.75
+        );
+        QCOMPARE(
+            settings.value(QStringLiteral("roundedCorners")).toBool(),
+            true
+        );
+        QCOMPARE(
+            settings.value(QStringLiteral("pageOrientation")).toString(),
+            QStringLiteral("portrait")
+        );
+        QCOMPARE(
+            settings.value(QStringLiteral("exportContentMode")).toString(),
+            QStringLiteral("front-only")
+        );
+        QCOMPARE(
+            settings.value(QStringLiteral("printerDuplexMode")).toString(),
+            QStringLiteral("single-sided")
+        );
+        QVERIFY(
+            settings.value(QStringLiteral("cutSourceSelection")).isNull()
+        );
+
+        const QJsonObject trim = settings
+            .value(QStringLiteral("cutGuides"))
+            .toObject()
+            .value(QStringLiteral("trim"))
+            .toObject();
+
+        QCOMPARE(trim.value(QStringLiteral("enabled")).toBool(), true);
+        QCOMPARE(trim.value(QStringLiteral("extentMm")).toDouble(), 1.0);
+        QCOMPARE(
+            trim.value(QStringLiteral("color")).toString(),
+            QStringLiteral("blue")
+        );
+
         const ProjectSnapshotCompat reread =
             deserializeProjectSnapshot(serialized);
         QCOMPARE(reread.sourceSchemaVersion, 6);
@@ -267,9 +309,24 @@ private slots:
                 QStringLiteral("selectedArtworkByFace")
             )
         );
-        QCOMPARE(
-            reread.settings.value(QStringLiteral("legacySetting")).toString(),
-            QStringLiteral("preserved")
+    }
+
+    void rejectsSettingsFieldsThatDidNotExistInSchema()
+    {
+        const QByteArray invalidLegacy = R"JSON({
+          "projectSchemaVersion": 1,
+          "cards": [],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {},
+            "pageOrientation": "portrait"
+          }
+        })JSON";
+
+        QVERIFY_EXCEPTION_THROWN(
+            deserializeProjectSnapshot(invalidLegacy),
+            ProjectSnapshotError
         );
     }
 

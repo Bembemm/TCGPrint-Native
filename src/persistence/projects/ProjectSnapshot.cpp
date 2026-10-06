@@ -135,6 +135,181 @@ void assertTopLevelShape(const QJsonObject& object, int version)
     }
 }
 
+QJsonObject defaultProjectSettings()
+{
+    QJsonObject trim;
+    trim.insert(QStringLiteral("enabled"), false);
+    trim.insert(QStringLiteral("extentMm"), 1.0);
+    trim.insert(QStringLiteral("color"), QStringLiteral("blue"));
+
+    QJsonObject external;
+    external.insert(QStringLiteral("enabled"), false);
+    external.insert(QStringLiteral("strokeWidthPt"), 0.3);
+    external.insert(QStringLiteral("color"), QStringLiteral("black"));
+
+    QJsonObject cutGuides;
+    cutGuides.insert(QStringLiteral("trim"), trim);
+    cutGuides.insert(QStringLiteral("external"), external);
+
+    QJsonObject paperFormat;
+    paperFormat.insert(QStringLiteral("name"), QStringLiteral("A4"));
+    paperFormat.insert(QStringLiteral("widthMm"), 210.0);
+    paperFormat.insert(QStringLiteral("heightMm"), 297.0);
+
+    QJsonObject cardFormat;
+    cardFormat.insert(QStringLiteral("id"), QStringLiteral("magic-standard"));
+    cardFormat.insert(QStringLiteral("name"), QStringLiteral("Magic Standard"));
+    cardFormat.insert(QStringLiteral("widthMm"), 63.5);
+    cardFormat.insert(QStringLiteral("heightMm"), 88.9);
+    cardFormat.insert(QStringLiteral("cornerRadiusMm"), 3.175);
+
+    QJsonObject margins;
+    margins.insert(QStringLiteral("top"), 0.0);
+    margins.insert(QStringLiteral("right"), 0.0);
+    margins.insert(QStringLiteral("bottom"), 0.0);
+    margins.insert(QStringLiteral("left"), 0.0);
+
+    QJsonObject registration;
+    registration.insert(QStringLiteral("type"), QStringLiteral("none"));
+    registration.insert(QStringLiteral("orientation"), QStringLiteral("portrait"));
+
+    QJsonObject layout;
+    layout.insert(QStringLiteral("skippedSlotIndices"), QJsonArray{});
+
+    QJsonObject settings;
+    settings.insert(QStringLiteral("bleedMm"), 0.625);
+    settings.insert(QStringLiteral("roundedCorners"), false);
+    settings.insert(QStringLiteral("cutGuides"), cutGuides);
+    settings.insert(QStringLiteral("pageOrientation"), QStringLiteral("portrait"));
+    settings.insert(QStringLiteral("cardOrientation"), QStringLiteral("portrait"));
+    settings.insert(QStringLiteral("paperFormat"), paperFormat);
+    settings.insert(QStringLiteral("cardFormat"), cardFormat);
+    settings.insert(QStringLiteral("marginsMm"), margins);
+    settings.insert(QStringLiteral("horizontalGapMm"), 0.0);
+    settings.insert(QStringLiteral("verticalGapMm"), 0.0);
+    settings.insert(QStringLiteral("registration"), registration);
+    settings.insert(QStringLiteral("registrationOverride"), false);
+    settings.insert(QStringLiteral("cutSourceSelection"), QJsonValue::Null);
+    settings.insert(QStringLiteral("exportContentMode"), QStringLiteral("front-only"));
+    settings.insert(QStringLiteral("missingBackPolicy"), QStringLiteral("use-project-default"));
+    settings.insert(QStringLiteral("duplexFlipMode"), QStringLiteral("long-edge"));
+    settings.insert(QStringLiteral("projectDefaultBack"), QJsonValue::Null);
+    settings.insert(QStringLiteral("printerProfileSelection"), QJsonValue::Null);
+    settings.insert(QStringLiteral("printerDuplexMode"), QStringLiteral("single-sided"));
+    settings.insert(QStringLiteral("layout"), layout);
+    return settings;
+}
+
+std::set<QString> settingsKeysForVersion(int version)
+{
+    std::set<QString> keys{
+        QStringLiteral("bleedMm"),
+        QStringLiteral("roundedCorners"),
+        QStringLiteral("cutGuides"),
+    };
+
+    if (version >= 2) {
+        keys.insert(QStringLiteral("pageOrientation"));
+        keys.insert(QStringLiteral("cardOrientation"));
+        keys.insert(QStringLiteral("paperFormat"));
+        keys.insert(QStringLiteral("cardFormat"));
+        keys.insert(QStringLiteral("marginsMm"));
+        keys.insert(QStringLiteral("horizontalGapMm"));
+        keys.insert(QStringLiteral("verticalGapMm"));
+        keys.insert(QStringLiteral("registration"));
+        keys.insert(QStringLiteral("registrationOverride"));
+        keys.insert(QStringLiteral("layout"));
+    }
+
+    if (version >= 3) {
+        keys.insert(QStringLiteral("cutSourceSelection"));
+    }
+
+    if (version >= 4) {
+        keys.insert(QStringLiteral("exportContentMode"));
+        keys.insert(QStringLiteral("missingBackPolicy"));
+        keys.insert(QStringLiteral("duplexFlipMode"));
+        keys.insert(QStringLiteral("projectDefaultBack"));
+    }
+
+    if (version >= 5) {
+        keys.insert(QStringLiteral("printerProfileSelection"));
+        keys.insert(QStringLiteral("printerDuplexMode"));
+    }
+
+    return keys;
+}
+
+QJsonObject mergeObject(
+    const QJsonObject& base,
+    const QJsonObject& overlay
+)
+{
+    QJsonObject result = base;
+    for (auto iterator = overlay.begin(); iterator != overlay.end(); ++iterator) {
+        result.insert(iterator.key(), iterator.value());
+    }
+    return result;
+}
+
+QJsonObject normalizeProjectSettings(
+    const QJsonObject& source,
+    int sourceVersion
+)
+{
+    const std::set<QString> allowed = settingsKeysForVersion(sourceVersion);
+
+    for (auto iterator = source.begin(); iterator != source.end(); ++iterator) {
+        if (!allowed.contains(iterator.key())) {
+            invalid(
+                "snapshot.settings contains unsupported property "
+                + iterator.key().toStdString()
+                + "."
+            );
+        }
+    }
+
+    QJsonObject result = defaultProjectSettings();
+
+    for (auto iterator = source.begin(); iterator != source.end(); ++iterator) {
+        if (
+            iterator.key() == QStringLiteral("cutGuides")
+            && iterator.value().isObject()
+        ) {
+            QJsonObject guides =
+                result.value(QStringLiteral("cutGuides")).toObject();
+            const QJsonObject overlay = iterator.value().toObject();
+
+            if (overlay.value(QStringLiteral("trim")).isObject()) {
+                guides.insert(
+                    QStringLiteral("trim"),
+                    mergeObject(
+                        guides.value(QStringLiteral("trim")).toObject(),
+                        overlay.value(QStringLiteral("trim")).toObject()
+                    )
+                );
+            }
+
+            if (overlay.value(QStringLiteral("external")).isObject()) {
+                guides.insert(
+                    QStringLiteral("external"),
+                    mergeObject(
+                        guides.value(QStringLiteral("external")).toObject(),
+                        overlay.value(QStringLiteral("external")).toObject()
+                    )
+                );
+            }
+
+            result.insert(QStringLiteral("cutGuides"), guides);
+            continue;
+        }
+
+        result.insert(iterator.key(), iterator.value());
+    }
+
+    return result;
+}
+
 std::vector<PersistedWorkingCardCompat> parseCards(const QJsonValue& value)
 {
     if (!value.isArray()) {
@@ -377,7 +552,13 @@ QByteArray serializeProjectSnapshot(const ProjectSnapshotCompat& snapshot)
         CurrentProjectSchemaVersion
     );
     root.insert(QStringLiteral("cards"), persistedCards);
-    root.insert(QStringLiteral("settings"), snapshot.settings);
+    root.insert(
+        QStringLiteral("settings"),
+        normalizeProjectSettings(
+            snapshot.settings,
+            CurrentProjectSchemaVersion
+        )
+    );
     root.insert(QStringLiteral("physicalOrder"), physicalOrder);
 
     const QByteArray serialized =
@@ -459,7 +640,10 @@ ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
         .sourceSchemaVersion = version,
         .projectSchemaVersion = CurrentProjectSchemaVersion,
         .cards = persistedCards,
-        .settings = settingsValue.toObject(),
+        .settings = normalizeProjectSettings(
+            settingsValue.toObject(),
+            version
+        ),
         .physicalOrder = std::move(physicalOrder),
     };
 }
