@@ -1,8 +1,11 @@
 #pragma once
 
 #include <QByteArray>
+#include <QJsonObject>
 #include <QString>
 #include <QStringList>
+
+#include <cstdint>
 
 #include <optional>
 #include <vector>
@@ -56,6 +59,80 @@ struct ImportDetectionInput {
     std::optional<QString> sourceUrl;
     std::optional<QString> adapterId;
     bool urlLike{false};
+};
+
+enum class ImportSourceKind {
+    File,
+    FolderFile,
+    Text,
+    Clipboard,
+    ZipEntry,
+    Url,
+};
+
+struct ImportSource {
+    QString id;
+    ImportSourceKind kind{ImportSourceKind::Text};
+    std::optional<QString> filename;
+    std::optional<QString> sourcePath;
+    std::optional<QString> parentSourceId;
+    int order{0};
+    std::optional<QString> originalFormat;
+    std::optional<QString> mediaType;
+    std::optional<QString> sourceUrl;
+    std::optional<QString> adapterId;
+    std::uint64_t sizeBytes{0};
+    std::optional<QByteArray> originalBytes;
+    std::optional<QString> originalText;
+    std::optional<QString> sha256;
+    QJsonObject metadata;
+};
+
+struct ImportedCardHint {
+    std::optional<QString> name;
+    std::optional<QString> setCode;
+    std::optional<QString> collectorNumber;
+    std::optional<QString> scryfallId;
+    std::optional<QString> imageUrl;
+    std::optional<QString> language;
+    std::optional<QString> section;
+};
+
+enum class ImportedEntryKind {
+    DeckCard,
+    CustomCard,
+    Asset,
+    MpcOrderCard,
+    Document,
+};
+
+struct ImportedEntry {
+    QString id;
+    ImportedEntryKind kind{ImportedEntryKind::DeckCard};
+    int order{0};
+    std::uint64_t quantity{1};
+    QString sourceId;
+    std::optional<QString> sourceFilename;
+    std::optional<QString> sourcePath;
+    std::optional<ImportedCardHint> cardHint;
+    std::optional<QString> nameSuggestion;
+    std::optional<QString> section;
+    QJsonObject metadata;
+};
+
+struct ImportWarning {
+    QString code;
+    QString message;
+    std::optional<QString> sourceId;
+    std::optional<QString> sourceFilename;
+    std::optional<QString> sourcePath;
+    std::optional<int> line;
+    std::optional<QString> field;
+};
+
+struct ImporterOutput {
+    std::vector<ImportedEntry> entries;
+    std::vector<ImportWarning> warnings;
 };
 
 QString importKindName(ImportKind kind);

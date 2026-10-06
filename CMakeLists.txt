@@ -107,12 +107,15 @@ target_compile_features(tcgprint_application PUBLIC cxx_std_23)
 
 add_library(tcgprint_import STATIC
     src/import/ImportTypes.h
+    src/import/ImportFailure.h
     src/import/ImportDetection.h
     src/import/ImportDetection.cpp
     src/import/ImportLimits.h
     src/import/ImportLimits.cpp
     src/import/SourcePath.h
     src/import/SourcePath.cpp
+    src/import/TextImport.h
+    src/import/TextImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -316,6 +319,23 @@ target_link_libraries(tcgprint_import_boundary_tests
 add_test(
     NAME tcgprint_import_boundary_tests
     COMMAND tcgprint_import_boundary_tests
+)
+
+
+qt_add_executable(tcgprint_import_text_tests
+    tests/import/TextImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_text_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_text_tests
+    COMMAND tcgprint_import_text_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
