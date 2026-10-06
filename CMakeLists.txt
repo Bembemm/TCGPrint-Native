@@ -19,6 +19,7 @@ find_package(
         Qml
         Quick
         QuickControls2
+        Sql
         Test
 )
 
@@ -51,6 +52,8 @@ target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 add_library(tcgprint_projects STATIC
     src/persistence/projects/ProjectSnapshot.h
     src/persistence/projects/ProjectSnapshot.cpp
+    src/persistence/projects/ProjectRepository.h
+    src/persistence/projects/ProjectRepository.cpp
 )
 
 target_include_directories(tcgprint_projects
@@ -62,6 +65,7 @@ target_link_libraries(tcgprint_projects
     PUBLIC
         tcgprint_domain
         Qt6::Core
+        Qt6::Sql
 )
 
 target_compile_features(tcgprint_projects PUBLIC cxx_std_23)
@@ -218,4 +222,22 @@ target_link_libraries(tcgprint_project_snapshot_tests
 add_test(
     NAME tcgprint_project_snapshot_tests
     COMMAND tcgprint_project_snapshot_tests
+)
+
+
+qt_add_executable(tcgprint_project_repository_tests
+    tests/persistence/ProjectRepositoryTest.cpp
+)
+
+target_link_libraries(tcgprint_project_repository_tests
+    PRIVATE
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_repository_tests
+    COMMAND tcgprint_project_repository_tests
 )
