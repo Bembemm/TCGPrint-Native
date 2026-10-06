@@ -310,7 +310,225 @@ QJsonObject normalizeProjectSettings(
     return result;
 }
 
-std::vector<PersistedWorkingCardCompat> parseCards(const QJsonValue& value)
+std::set<QString> cardKeysForVersion(int version)
+{
+    std::set<QString> keys{
+        QStringLiteral("id"),
+        QStringLiteral("quantity"),
+        QStringLiteral("order"),
+        QStringLiteral("section"),
+        QStringLiteral("importSource"),
+        QStringLiteral("identityHints"),
+        QStringLiteral("identity"),
+        QStringLiteral("identityResolution"),
+        QStringLiteral("faces"),
+        QStringLiteral("selectedArtworkByFace"),
+        QStringLiteral("localArtworkIds"),
+        QStringLiteral("mpcReferences"),
+        QStringLiteral("sharedMpcCardback"),
+        QStringLiteral("faceAssociations"),
+    };
+
+    if (version >= 4) {
+        keys.insert(QStringLiteral("backMode"));
+        keys.insert(QStringLiteral("backModeSelectionPolicy"));
+        keys.insert(QStringLiteral("manualBackAsset"));
+        keys.insert(QStringLiteral("manualBackArtwork"));
+    }
+
+    return keys;
+}
+
+bool rawIdentityIsDoubleFaced(const QJsonValue& value)
+{
+    if (!value.isObject()) {
+        return false;
+    }
+
+    const QJsonObject identity = value.toObject();
+    const QJsonValue metadataValue =
+        identity.value(QStringLiteral("metadata"));
+    if (!metadataValue.isObject()) {
+        return false;
+    }
+
+    const QJsonObject metadata = metadataValue.toObject();
+    const QString layout =
+        metadata.value(QStringLiteral("layout")).toString();
+
+    const bool supportedLayout =
+        layout == QStringLiteral("transform")
+        || layout == QStringLiteral("modal_dfc")
+        || layout == QStringLiteral("double_faced_token")
+        || layout == QStringLiteral("reversible_card");
+
+    if (!supportedLayout) {
+        return false;
+    }
+
+    const QJsonValue facesValue =
+        metadata.value(QStringLiteral("faces"));
+    if (!facesValue.isArray()) {
+        return false;
+    }
+
+    const QJsonArray faces = facesValue.toArray();
+    if (faces.size() != 2) {
+        return false;
+    }
+
+    for (const QJsonValue& faceValue : faces) {
+        if (!faceValue.isObject()) {
+            return false;
+        }
+
+        const QString name = faceValue
+            .toObject()
+            .value(QStringLiteral("name"))
+            .toString();
+
+        if (name.trimmed().isEmpty()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+QString backModeString(cards::BackMode mode)
+{
+    switch (mode) {
+    case cards::BackMode::Auto:
+        return QStringLiteral("auto");
+    case cards::BackMode::ProjectDefault:
+        return QStringLiteral("project-default");
+    case cards::BackMode::Manual:
+        return QStringLiteral("manual");
+    case cards::BackMode::None:
+        return QStringLiteral("none");
+    }
+
+    return QStringLiteral("project-default");
+}
+
+cards::BackMode parseBackMode(
+    const QJsonObject& raw,
+    int version
+)
+{
+    const QJsonValue value = raw.value(QStringLiteral("backMode"));
+
+    if (version >= 4 && value.isString()) {
+        const QString mode = value.toString();
+
+        if (mode == QStringLiteral("auto")) {
+            return cards::BackMode::Auto;
+        }
+        if (mode == QStringLiteral("project-default")) {
+            return cards::BackMode::ProjectDefault;
+        }
+        if (mode == QStringLiteral("manual")) {
+            return cards::BackMode::Manual;
+        }
+        if (mode == QStringLiteral("none")) {
+            return cards::BackMode::None;
+        }
+
+        invalid("snapshot card backMode is not supported.");
+    }
+
+    const QJsonObject selected =
+        raw.value(QStringLiteral("selectedArtworkByFace")).toObject();
+    const QJsonObject selectedBack =
+        selected.value(QStringLiteral("back")).toObject();
+
+    const bool explicitBackArtwork =
+        selectedBack.value(QStringLiteral("selectionPolicy")).toString()
+        == QStringLiteral("user-selected");
+
+    if (
+        raw.contains(QStringLiteral("manualBackAsset"))
+        || raw.contains(QStringLiteral("manualBackArtwork"))
+        || explicitBackArtwork
+    ) {
+        return cards::BackMode::Manual;
+    }
+
+    if (rawIdentityIsDoubleFaced(raw.value(QStringLiteral("identity")))) {
+        return cards::BackMode::Auto;
+    }
+
+    return cards::BackMode::ProjectDefault;
+}
+
+cards::BackModeSelectionPolicy parseBackModeSelectionPolicy(
+    const QJsonObject& raw,
+    cards::BackMode mode
+)
+{
+    const QJsonValue value =
+        raw.value(QStringLiteral("backModeSelectionPolicy"));
+
+    if (value.isString()) {
+        const QString policy = value.toString();
+
+        if (policy == QStringLiteral("automatic")) {
+            return cards::BackModeSelectionPolicy::Automatic;
+        }
+        if (policy == QStringLiteral("explicit")) {
+            return cards::BackModeSelectionPolicy::Explicit;
+        }
+
+        invalid("snapshot card backModeSelectionPolicy is not supported.");
+    }
+
+    return mode == cards::BackMode::Manual
+        ? cards::BackModeSelectionPolicy::Explicit
+        : cards::BackModeSelectionPolicy::Automatic;
+}
+
+QJsonObject normalizeCardTopLevel(
+    const QJsonObject& source,
+    int version,
+    cards::BackMode& backMode,
+    cards::BackModeSelectionPolicy& selectionPolicy
+)
+{
+    const std::set<QString> allowed = cardKeysForVersion(version);
+
+    for (auto iterator = source.begin(); iterator != source.end(); ++iterator) {
+        if (!allowed.contains(iterator.key())) {
+            invalid(
+                "snapshot card contains unsupported property "
+                + iterator.key().toStdString()
+                + "."
+            );
+        }
+    }
+
+    backMode = parseBackMode(source, version);
+    selectionPolicy =
+        parseBackModeSelectionPolicy(source, backMode);
+
+    QJsonObject result = source;
+    result.insert(
+        QStringLiteral("backMode"),
+        backModeString(backMode)
+    );
+    result.insert(
+        QStringLiteral("backModeSelectionPolicy"),
+        selectionPolicy == cards::BackModeSelectionPolicy::Explicit
+            ? QStringLiteral("explicit")
+            : QStringLiteral("automatic")
+    );
+
+    return result;
+}
+
+std::vector<PersistedWorkingCardCompat> parseCards(
+    const QJsonValue& value,
+    int version
+)
 {
     if (!value.isArray()) {
         invalid("snapshot.cards must be an array.");
@@ -337,7 +555,15 @@ std::vector<PersistedWorkingCardCompat> parseCards(const QJsonValue& value)
             );
         }
 
-        const QJsonObject raw = value.toObject();
+        const QJsonObject source = value.toObject();
+        cards::BackMode backMode;
+        cards::BackModeSelectionPolicy selectionPolicy;
+        const QJsonObject raw = normalizeCardTopLevel(
+            source,
+            version,
+            backMode,
+            selectionPolicy
+        );
         const std::string path =
             "snapshot.cards[" + std::to_string(index) + "]";
 
@@ -360,6 +586,8 @@ std::vector<PersistedWorkingCardCompat> parseCards(const QJsonValue& value)
             .id = id,
             .quantity = quantity,
             .order = order,
+            .backMode = backMode,
+            .backModeSelectionPolicy = selectionPolicy,
             .raw = raw,
         });
     }
@@ -617,7 +845,10 @@ ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
     assertTopLevelShape(root, version);
 
     const std::vector<PersistedWorkingCardCompat> persistedCards =
-        parseCards(root.value(QStringLiteral("cards")));
+        parseCards(
+            root.value(QStringLiteral("cards")),
+            version
+        );
     const std::vector<cards::WorkingCard> workingCards =
         orderCards(persistedCards);
 

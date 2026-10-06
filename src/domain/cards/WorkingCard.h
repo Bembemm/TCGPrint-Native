@@ -22,6 +22,12 @@ enum class BackMode
     None,
 };
 
+enum class BackModeSelectionPolicy
+{
+    Automatic,
+    Explicit,
+};
+
 struct WorkingCard final
 {
     std::string id;
@@ -30,6 +36,9 @@ struct WorkingCard final
     int order{0};
     std::optional<CardIdentity> identity;
     BackMode backMode{BackMode::Auto};
+    BackModeSelectionPolicy backModeSelectionPolicy{
+        BackModeSelectionPolicy::Automatic
+    };
 
     bool operator==(const WorkingCard&) const = default;
 };

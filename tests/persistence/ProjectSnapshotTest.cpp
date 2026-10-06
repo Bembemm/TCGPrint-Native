@@ -105,6 +105,113 @@ private slots:
         );
     }
 
+    void derivesLegacySimpleCardBackMode()
+    {
+        const QByteArray legacy = R"JSON({
+          "projectSchemaVersion": 3,
+          "cards": [
+            {
+              "id": "card-a",
+              "quantity": 1,
+              "order": 0,
+              "selectedArtworkByFace": {}
+            }
+          ],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {}
+          }
+        })JSON";
+
+        const ProjectSnapshotCompat snapshot =
+            deserializeProjectSnapshot(legacy);
+
+        QCOMPARE(snapshot.cards.size(), std::size_t{1});
+        QCOMPARE(
+            snapshot.cards[0].backMode,
+            tcgprint::cards::BackMode::ProjectDefault
+        );
+        QCOMPARE(
+            snapshot.cards[0].backModeSelectionPolicy,
+            tcgprint::cards::BackModeSelectionPolicy::Automatic
+        );
+        QCOMPARE(
+            snapshot.cards[0].raw
+                .value(QStringLiteral("backMode"))
+                .toString(),
+            QStringLiteral("project-default")
+        );
+    }
+
+    void derivesLegacyDfcBackModeFromProviderMetadata()
+    {
+        const QByteArray legacy = R"JSON({
+          "projectSchemaVersion": 3,
+          "cards": [
+            {
+              "id": "dfc",
+              "quantity": 1,
+              "order": 0,
+              "identity": {
+                "metadata": {
+                  "layout": "transform",
+                  "faces": [
+                    {"name": "Front"},
+                    {"name": "Back"}
+                  ]
+                }
+              },
+              "selectedArtworkByFace": {}
+            }
+          ],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {}
+          }
+        })JSON";
+
+        const ProjectSnapshotCompat snapshot =
+            deserializeProjectSnapshot(legacy);
+
+        QCOMPARE(
+            snapshot.cards[0].backMode,
+            tcgprint::cards::BackMode::Auto
+        );
+        QCOMPARE(
+            snapshot.cards[0].raw
+                .value(QStringLiteral("backMode"))
+                .toString(),
+            QStringLiteral("auto")
+        );
+    }
+
+    void rejectsCardFieldsThatDidNotExistInSchema()
+    {
+        const QByteArray invalidLegacy = R"JSON({
+          "projectSchemaVersion": 3,
+          "cards": [
+            {
+              "id": "card-a",
+              "quantity": 1,
+              "order": 0,
+              "backMode": "none"
+            }
+          ],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {}
+          }
+        })JSON";
+
+        QVERIFY_EXCEPTION_THROWN(
+            deserializeProjectSnapshot(invalidLegacy),
+            ProjectSnapshotError
+        );
+    }
+
     void serializesCanonicalV6WithoutLosingDurableState()
     {
         const QByteArray json = R"JSON({

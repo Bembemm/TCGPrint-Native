@@ -41,6 +41,10 @@ struct PersistedWorkingCardCompat final
     std::string id;
     std::uint32_t quantity{1};
     int order{0};
+    cards::BackMode backMode{cards::BackMode::ProjectDefault};
+    cards::BackModeSelectionPolicy backModeSelectionPolicy{
+        cards::BackModeSelectionPolicy::Automatic
+    };
     QJsonObject raw;
 
     bool operator==(const PersistedWorkingCardCompat&) const = default;
