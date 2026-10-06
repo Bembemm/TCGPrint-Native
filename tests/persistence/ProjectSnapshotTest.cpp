@@ -227,7 +227,7 @@ private slots:
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
-            static_cast<void>(deserializeProjectSnapshot(invalidCurrent))),
+            static_cast<void>(deserializeProjectSnapshot(invalidCurrent)),
             ProjectSnapshotError
         );
     }
@@ -554,7 +554,7 @@ private slots:
         broken.physicalOrder.instances.clear();
 
         QVERIFY_EXCEPTION_THROWN(
-            serializeProjectSnapshot(broken)),
+            static_cast<void>(serializeProjectSnapshot(broken)),
             ProjectSnapshotError
         );
     }
