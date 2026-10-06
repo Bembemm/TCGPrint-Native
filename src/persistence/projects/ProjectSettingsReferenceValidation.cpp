@@ -494,8 +494,10 @@ void validatePrinterProfileSnapshot(const QJsonObject& profile)
     const QJsonValue verification =
         profile.value(QStringLiteral("physicalVerification"));
     const bool hasVerification = verification.isObject();
+    const bool noVerification =
+        verification.isUndefined() || verification.isNull();
 
-    if (!verification.isNull() && !hasVerification) {
+    if (!noVerification && !hasVerification) {
         invalid(path + ".physicalVerification must be null or an object.");
     }
 
