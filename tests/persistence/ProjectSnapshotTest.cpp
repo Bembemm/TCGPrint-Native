@@ -227,7 +227,7 @@ private slots:
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
-            static_cast<void>(deserializeProjectSnapshot(invalidCurrent)),
+            static_cast<void>(deserializeProjectSnapshot(invalidCurrent))),
             ProjectSnapshotError
         );
     }
@@ -252,7 +252,7 @@ private slots:
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
-            deserializeProjectSnapshot(invalidLegacy),
+            static_cast<void>(deserializeProjectSnapshot(invalidLegacy)),
             ProjectSnapshotError
         );
     }
@@ -387,8 +387,25 @@ private slots:
               "id": "card-a",
               "quantity": 2,
               "order": 0,
-              "identity": {"id": "keep-me"},
-              "selectedArtworkByFace": {"front": {"candidateId": "keep-me-too"}}
+              "importSource": {
+                "sourceId": "source-a",
+                "importKind": "text",
+                "entryKind": "card"
+              },
+              "identityHints": {"name": "Legacy Card"},
+              "identity": null,
+              "identityResolution": {
+                "status": "unresolved",
+                "candidates": [],
+                "confirmed": false
+              },
+              "faces": [
+                {"id": "front", "side": "front", "name": "Legacy Card"}
+              ],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
             }
           ],
           "settings": {
@@ -463,6 +480,18 @@ private slots:
             deserializeProjectSnapshot(serialized);
         QCOMPARE(reread.sourceSchemaVersion, 6);
         QCOMPARE(reread.physicalOrder.instances.size(), std::size_t{2});
+        QCOMPARE(
+            reread.cards[0].raw
+                .value(QStringLiteral("backMode"))
+                .toString(),
+            QStringLiteral("project-default")
+        );
+        QCOMPARE(
+            reread.cards[0].raw
+                .value(QStringLiteral("backModeSelectionPolicy"))
+                .toString(),
+            QStringLiteral("automatic")
+        );
         QVERIFY(
             reread.cards[0].raw.contains(
                 QStringLiteral("selectedArtworkByFace")
@@ -484,7 +513,7 @@ private slots:
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
-            deserializeProjectSnapshot(invalidLegacy),
+            static_cast<void>(deserializeProjectSnapshot(invalidLegacy)),
             ProjectSnapshotError
         );
     }
@@ -525,7 +554,7 @@ private slots:
         broken.physicalOrder.instances.clear();
 
         QVERIFY_EXCEPTION_THROWN(
-            serializeProjectSnapshot(broken),
+            serializeProjectSnapshot(broken)),
             ProjectSnapshotError
         );
     }
@@ -604,7 +633,7 @@ private slots:
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
-            deserializeProjectSnapshot(json),
+            static_cast<void>(deserializeProjectSnapshot(json)),
             ProjectSnapshotError
         );
     }

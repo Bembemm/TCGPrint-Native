@@ -267,7 +267,9 @@ private slots:
         )));
 
         QVERIFY_EXCEPTION_THROWN(
-            repository.duplicate(original.metadata.id),
+            static_cast<void>(
+                repository.duplicate(original.metadata.id)
+            ),
             ProjectRepositoryError
         );
 

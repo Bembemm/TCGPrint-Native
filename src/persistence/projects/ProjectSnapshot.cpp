@@ -488,7 +488,7 @@ cards::BackModeSelectionPolicy parseBackModeSelectionPolicy(
         : cards::BackModeSelectionPolicy::Automatic;
 }
 
-void validateCurrentCardRequiredShape(
+void validatePersistedCardRequiredShape(
     const QJsonObject& source,
     const std::string& path
 )
@@ -506,7 +506,7 @@ void validateCurrentCardRequiredShape(
 
     for (const char* key : objectOrArrayKeys) {
         if (!source.contains(QLatin1String(key))) {
-            invalid(path + "." + key + " is required in schema v6.");
+            invalid(path + "." + key + " is required in persisted WorkingCard data.");
         }
     }
 
@@ -519,7 +519,7 @@ void validateCurrentCardRequiredShape(
 
     const QJsonValue identity = source.value(QStringLiteral("identity"));
     if (!source.contains(QStringLiteral("identity"))) {
-        invalid(path + ".identity is required in schema v6.");
+        invalid(path + ".identity is required in persisted WorkingCard data.");
     }
     if (!identity.isNull() && !identity.isObject()) {
         invalid(path + ".identity must be null or an object.");
@@ -652,9 +652,7 @@ std::vector<PersistedWorkingCardCompat> parseCards(
         const std::string path =
             "snapshot.cards[" + std::to_string(index) + "]";
 
-        if (version >= CurrentProjectSchemaVersion) {
-            validateCurrentCardRequiredShape(source, path);
-        }
+        validatePersistedCardRequiredShape(source, path);
 
         cards::BackMode backMode;
         cards::BackModeSelectionPolicy selectionPolicy;
