@@ -121,7 +121,7 @@ struct CardFace final
     CardFaceSide side{CardFaceSide::Front};
     std::optional<std::string> name;
     std::optional<std::string> importedAssetId;
-    std::vector<std::string> slots;
+    std::vector<std::string> providerSlots;
 
     bool operator==(const CardFace&) const = default;
 };
@@ -191,7 +191,7 @@ struct WorkingCardMpcReference final
     std::optional<std::string> selectedArtworkId;
     std::optional<MpcReferenceOrigin> referenceOrigin;
     std::optional<MpcProviderCardType> providerCardType;
-    std::vector<std::string> slots;
+    std::vector<std::string> providerSlots;
     bool availableLocally{false};
 
     bool operator==(const WorkingCardMpcReference&) const = default;
