@@ -37,6 +37,8 @@ add_library(tcgprint_domain STATIC
     src/domain/geometry/Millimeters.h
     src/domain/geometry/CardFormat.h
     src/domain/geometry/CardFormat.cpp
+    src/domain/projects/ProjectSettings.h
+    src/domain/projects/ProjectSettings.cpp
     src/domain/cards/WorkingCard.h
     src/domain/cards/WorkingSet.h
     src/domain/cards/WorkingSet.cpp
@@ -168,6 +170,22 @@ target_link_libraries(tcgprint_geometry_tests
 add_test(
     NAME tcgprint_geometry_tests
     COMMAND tcgprint_geometry_tests
+)
+
+qt_add_executable(tcgprint_project_settings_tests
+    tests/domain/ProjectSettingsTest.cpp
+)
+
+target_link_libraries(tcgprint_project_settings_tests
+    PRIVATE
+        tcgprint_domain
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_settings_tests
+    COMMAND tcgprint_project_settings_tests
 )
 
 qt_add_executable(tcgprint_physical_order_tests
