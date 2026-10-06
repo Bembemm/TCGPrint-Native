@@ -126,7 +126,18 @@ private slots:
           "settings": {
             "bleedMm": 0.625,
             "roundedCorners": false,
-            "cutGuides": {}
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            }
           }
         })JSON";
 
@@ -153,7 +164,7 @@ private slots:
     void derivesLegacySimpleCardBackMode()
     {
         const QByteArray legacy = R"JSON({
-          "projectSchemaVersion": 3,
+          "projectSchemaVersion": 1,
           "cards": [
             {
               "id": "card-a",
@@ -173,7 +184,18 @@ private slots:
           "settings": {
             "bleedMm": 0.625,
             "roundedCorners": false,
-            "cutGuides": {}
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            }
           }
         })JSON";
 
@@ -200,7 +222,7 @@ private slots:
     void derivesLegacyDfcBackModeFromProviderMetadata()
     {
         const QByteArray legacy = R"JSON({
-          "projectSchemaVersion": 3,
+          "projectSchemaVersion": 1,
           "cards": [
             {
               "id": "dfc",
@@ -241,7 +263,18 @@ private slots:
           "settings": {
             "bleedMm": 0.625,
             "roundedCorners": false,
-            "cutGuides": {}
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            }
           }
         })JSON";
 
@@ -289,7 +322,7 @@ private slots:
     void rejectsCardFieldsThatDidNotExistInSchema()
     {
         const QByteArray invalidLegacy = R"JSON({
-          "projectSchemaVersion": 3,
+          "projectSchemaVersion": 1,
           "cards": [
             {
               "id": "card-a",
@@ -310,7 +343,18 @@ private slots:
           "settings": {
             "bleedMm": 0.625,
             "roundedCorners": false,
-            "cutGuides": {}
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            }
           }
         })JSON";
 
@@ -475,8 +519,16 @@ private slots:
             "bleedMm": 0.75,
             "roundedCorners": true,
             "cutGuides": {
-              "trim": {"enabled": true},
-              "external": {"enabled": false}
+              "trim": {
+                "enabled": true,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
             }
           }
         })JSON";
@@ -570,7 +622,18 @@ private slots:
           "settings": {
             "bleedMm": 0.625,
             "roundedCorners": false,
-            "cutGuides": {},
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            },
             "pageOrientation": "portrait"
           }
         })JSON";
@@ -687,7 +750,7 @@ private slots:
     void rejectsDuplicateWorkingCardIds()
     {
         const QByteArray json = R"JSON({
-          "projectSchemaVersion": 5,
+          "projectSchemaVersion": 1,
           "cards": [
             {
               "id": "same",
@@ -699,8 +762,6 @@ private slots:
               "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
               "faces": [{"id": "front", "side": "front", "name": "First"}],
               "selectedArtworkByFace": {},
-              "backMode": "project-default",
-              "backModeSelectionPolicy": "automatic",
               "localArtworkIds": [],
               "mpcReferences": [],
               "faceAssociations": []
@@ -715,14 +776,27 @@ private slots:
               "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
               "faces": [{"id": "front", "side": "front", "name": "Second"}],
               "selectedArtworkByFace": {},
-              "backMode": "project-default",
-              "backModeSelectionPolicy": "automatic",
               "localArtworkIds": [],
               "mpcReferences": [],
               "faceAssociations": []
             }
           ],
-          "settings": {}
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {
+              "trim": {
+                "enabled": false,
+                "extentMm": 1.0,
+                "color": "blue"
+              },
+              "external": {
+                "enabled": false,
+                "strokeWidthPt": 0.3,
+                "color": "black"
+              }
+            }
+          }
         })JSON";
 
         QVERIFY_EXCEPTION_THROWN(
