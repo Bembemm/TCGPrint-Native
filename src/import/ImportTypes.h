@@ -143,6 +143,18 @@ struct CsvImportMapping {
     std::optional<CsvColumnSelector> language;
 };
 
+struct JsonImportMapping {
+    std::optional<QString> collectionPath;
+    std::optional<QString> name;
+    std::optional<QString> quantity;
+    std::optional<QString> setCode;
+    std::optional<QString> collectorNumber;
+    std::optional<QString> scryfallId;
+    std::optional<QString> imageUrl;
+    std::optional<QString> language;
+    std::optional<QString> section;
+};
+
 struct ImportMapping {
     QString sourceId;
     QString format;
