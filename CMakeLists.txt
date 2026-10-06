@@ -371,3 +371,20 @@ add_test(
     NAME tcgprint_project_autosave_tests
     COMMAND tcgprint_project_autosave_tests
 )
+
+
+qt_add_executable(tcgprint_project_migration_tests
+    tests/persistence/ProjectSnapshotMigrationTest.cpp
+)
+
+target_link_libraries(tcgprint_project_migration_tests
+    PRIVATE
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_migration_tests
+    COMMAND tcgprint_project_migration_tests
+)
