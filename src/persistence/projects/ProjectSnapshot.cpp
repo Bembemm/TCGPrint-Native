@@ -1,5 +1,6 @@
 #include "persistence/projects/ProjectSnapshot.h"
 #include "persistence/projects/PersistedWorkingCardValidation.h"
+#include "persistence/projects/ProjectSettingsCodec.h"
 
 #include "domain/cards/WorkingCard.h"
 
@@ -877,11 +878,16 @@ QByteArray serializeProjectSnapshot(const ProjectSnapshotCompat& snapshot)
         CurrentProjectSchemaVersion
     );
     root.insert(QStringLiteral("cards"), persistedCards);
-    root.insert(
-        QStringLiteral("settings"),
+    const QJsonObject normalizedSettings =
         normalizeProjectSettings(
             snapshot.settings,
             CurrentProjectSchemaVersion
+        );
+    root.insert(
+        QStringLiteral("settings"),
+        overlayProjectPrintSettings(
+            normalizedSettings,
+            snapshot.printSettings
         )
     );
     root.insert(QStringLiteral("physicalOrder"), physicalOrder);
@@ -964,14 +970,19 @@ ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
         physicalOrder = cards::makeLegacyPhysicalOrder(workingCards);
     }
 
+    const QJsonObject normalizedSettings =
+        normalizeProjectSettings(
+            settingsValue.toObject(),
+            version
+        );
+
     return ProjectSnapshotCompat{
         .sourceSchemaVersion = version,
         .projectSchemaVersion = CurrentProjectSchemaVersion,
         .cards = persistedCards,
-        .settings = normalizeProjectSettings(
-            settingsValue.toObject(),
-            version
-        ),
+        .settings = normalizedSettings,
+        .printSettings =
+            parseProjectPrintSettings(normalizedSettings),
         .physicalOrder = std::move(physicalOrder),
     };
 }

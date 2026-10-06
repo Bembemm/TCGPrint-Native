@@ -1,6 +1,7 @@
 #pragma once
 
 #include "domain/cards/PhysicalOrder.h"
+#include "domain/projects/ProjectSettings.h"
 
 #include <QByteArray>
 #include <QJsonObject>
@@ -56,6 +57,7 @@ struct ProjectSnapshotCompat final
     int projectSchemaVersion{CurrentProjectSchemaVersion};
     std::vector<PersistedWorkingCardCompat> cards;
     QJsonObject settings;
+    ProjectPrintSettings printSettings;
     cards::PhysicalOrder physicalOrder;
 };
 
