@@ -146,6 +146,366 @@ void validateIdentityHints(
     optionalString(hints, "language", path, 12);
 }
 
+bool isSupportedIdentityMethod(const QString& value)
+{
+    static const std::set<QString> Methods{
+        QStringLiteral("scryfall-id"),
+        QStringLiteral("set-collector"),
+        QStringLiteral("name"),
+        QStringLiteral("filename"),
+        QStringLiteral("ocr"),
+        QStringLiteral("fuzzy"),
+        QStringLiteral("manual"),
+        QStringLiteral("custom"),
+    };
+    return Methods.contains(value);
+}
+
+bool isSupportedIdentityStatus(const QString& value)
+{
+    static const std::set<QString> Statuses{
+        QStringLiteral("resolved"),
+        QStringLiteral("suggested"),
+        QStringLiteral("ambiguous"),
+        QStringLiteral("unresolved"),
+        QStringLiteral("custom"),
+    };
+    return Statuses.contains(value);
+}
+
+double finiteNumber(
+    const QJsonValue& value,
+    const std::string& path,
+    double minimum,
+    double maximum
+)
+{
+    if (!value.isDouble()) {
+        invalid(path + " must be a finite number.");
+    }
+
+    const double number = value.toDouble();
+    if (
+        !std::isfinite(number)
+        || number < minimum
+        || number > maximum
+    ) {
+        invalid(path + " is outside the supported range.");
+    }
+
+    return number;
+}
+
+void validateIdentityMetadata(
+    const QJsonObject& metadata,
+    const std::string& path
+)
+{
+    rejectUnsupportedKeys(
+        metadata,
+        {
+            QStringLiteral("layout"),
+            QStringLiteral("digital"),
+            QStringLiteral("promo"),
+            QStringLiteral("fullArt"),
+            QStringLiteral("imageStatus"),
+            QStringLiteral("faces"),
+            QStringLiteral("relatedCards"),
+        },
+        path
+    );
+
+    for (const QString& key : {
+        QStringLiteral("layout"),
+        QStringLiteral("digital"),
+        QStringLiteral("promo"),
+        QStringLiteral("fullArt"),
+        QStringLiteral("imageStatus"),
+    }) {
+        if (!metadata.contains(key)) {
+            continue;
+        }
+
+        const QJsonValue value = metadata.value(key);
+        if (!value.isString() && !value.isBool()) {
+            invalid(
+                path
+                + "."
+                + key.toStdString()
+                + " must be a string or boolean."
+            );
+        }
+    }
+
+    if (metadata.contains(QStringLiteral("faces"))) {
+        const QJsonValue value = metadata.value(QStringLiteral("faces"));
+        if (!value.isArray()) {
+            invalid(path + ".faces must be an array.");
+        }
+
+        const QJsonArray faces = value.toArray();
+        if (faces.size() > 2) {
+            invalid(path + ".faces must contain at most 2 items.");
+        }
+
+        for (qsizetype index = 0; index < faces.size(); ++index) {
+            if (!faces.at(index).isObject()) {
+                invalid(path + ".faces entries must be objects.");
+            }
+
+            const QJsonObject face = faces.at(index).toObject();
+            const std::string facePath =
+                path + ".faces[" + std::to_string(index) + "]";
+
+            rejectUnsupportedKeys(
+                face,
+                {QStringLiteral("name")},
+                facePath
+            );
+            static_cast<void>(
+                requiredString(face, "name", facePath, 200)
+            );
+        }
+    }
+
+    if (metadata.contains(QStringLiteral("relatedCards"))) {
+        const QJsonValue value =
+            metadata.value(QStringLiteral("relatedCards"));
+        if (!value.isArray()) {
+            invalid(path + ".relatedCards must be an array.");
+        }
+
+        const QJsonArray related = value.toArray();
+        if (related.size() > 50) {
+            invalid(path + ".relatedCards contains too many entries.");
+        }
+
+        for (qsizetype index = 0; index < related.size(); ++index) {
+            if (!related.at(index).isObject()) {
+                invalid(path + ".relatedCards entries must be objects.");
+            }
+
+            const QJsonObject item = related.at(index).toObject();
+            const std::string itemPath =
+                path + ".relatedCards[" + std::to_string(index) + "]";
+
+            rejectUnsupportedKeys(
+                item,
+                {
+                    QStringLiteral("id"),
+                    QStringLiteral("name"),
+                    QStringLiteral("component"),
+                    QStringLiteral("typeLine"),
+                },
+                itemPath
+            );
+
+            static_cast<void>(
+                requiredString(item, "id", itemPath, 80)
+            );
+            static_cast<void>(
+                requiredString(item, "name", itemPath, 200)
+            );
+            static_cast<void>(
+                requiredString(item, "component", itemPath, 40)
+            );
+            optionalString(item, "typeLine", itemPath, 200);
+        }
+    }
+}
+
+void validateCardIdentity(
+    const QJsonObject& identity,
+    const std::string& path
+)
+{
+    rejectUnsupportedKeys(
+        identity,
+        {
+            QStringLiteral("id"),
+            QStringLiteral("provider"),
+            QStringLiteral("name"),
+            QStringLiteral("scryfallId"),
+            QStringLiteral("oracleId"),
+            QStringLiteral("setCode"),
+            QStringLiteral("collectorNumber"),
+            QStringLiteral("lang"),
+            QStringLiteral("resolutionMethod"),
+            QStringLiteral("confidence"),
+            QStringLiteral("metadata"),
+        },
+        path
+    );
+
+    static_cast<void>(requiredString(identity, "id", path, 180));
+    static_cast<void>(requiredString(identity, "provider", path, 40));
+    static_cast<void>(requiredString(identity, "name", path, 200));
+
+    const QString method =
+        requiredString(identity, "resolutionMethod", path, 32);
+    if (!isSupportedIdentityMethod(method)) {
+        invalid(path + ".resolutionMethod is not supported.");
+    }
+
+    static_cast<void>(
+        finiteNumber(
+            identity.value(QStringLiteral("confidence")),
+            path + ".confidence",
+            0.0,
+            1.0
+        )
+    );
+
+    optionalString(identity, "scryfallId", path, 80);
+    optionalString(identity, "oracleId", path, 80);
+    optionalString(identity, "setCode", path, 12);
+    optionalString(identity, "collectorNumber", path, 40);
+    optionalString(identity, "lang", path, 12);
+
+    if (identity.contains(QStringLiteral("metadata"))) {
+        const QJsonValue metadata =
+            identity.value(QStringLiteral("metadata"));
+        if (!metadata.isObject()) {
+            invalid(path + ".metadata must be an object.");
+        }
+
+        validateIdentityMetadata(
+            metadata.toObject(),
+            path + ".metadata"
+        );
+    }
+}
+
+void validateIdentityResolution(
+    const QJsonObject& resolution,
+    bool hasCurrentIdentity,
+    const std::string& path
+)
+{
+    rejectUnsupportedKeys(
+        resolution,
+        {
+            QStringLiteral("status"),
+            QStringLiteral("method"),
+            QStringLiteral("query"),
+            QStringLiteral("confidence"),
+            QStringLiteral("candidates"),
+            QStringLiteral("confirmed"),
+        },
+        path
+    );
+
+    const QString status =
+        requiredString(resolution, "status", path, 16);
+    if (!isSupportedIdentityStatus(status)) {
+        invalid(path + ".status is not supported.");
+    }
+
+    if (resolution.contains(QStringLiteral("method"))) {
+        const QString method =
+            requiredString(resolution, "method", path, 32);
+        if (!isSupportedIdentityMethod(method)) {
+            invalid(path + ".method is not supported.");
+        }
+    }
+
+    optionalString(resolution, "query", path, 200);
+
+    if (resolution.contains(QStringLiteral("confidence"))) {
+        static_cast<void>(
+            finiteNumber(
+                resolution.value(QStringLiteral("confidence")),
+                path + ".confidence",
+                0.0,
+                1.0
+            )
+        );
+    }
+
+    const QJsonValue candidatesValue =
+        resolution.value(QStringLiteral("candidates"));
+    if (!candidatesValue.isArray()) {
+        invalid(path + ".candidates must be an array.");
+    }
+
+    const QJsonArray candidates = candidatesValue.toArray();
+    if (candidates.size() > 20) {
+        invalid(path + ".candidates contains too many entries.");
+    }
+
+    for (qsizetype index = 0; index < candidates.size(); ++index) {
+        if (!candidates.at(index).isObject()) {
+            invalid(path + ".candidates entries must be objects.");
+        }
+
+        const QJsonObject candidate =
+            candidates.at(index).toObject();
+        const std::string candidatePath =
+            path + ".candidates[" + std::to_string(index) + "]";
+
+        rejectUnsupportedKeys(
+            candidate,
+            {
+                QStringLiteral("identity"),
+                QStringLiteral("score"),
+                QStringLiteral("reason"),
+            },
+            candidatePath
+        );
+
+        const QJsonValue identity =
+            candidate.value(QStringLiteral("identity"));
+        if (!identity.isObject()) {
+            invalid(candidatePath + ".identity must be an identity object.");
+        }
+
+        validateCardIdentity(
+            identity.toObject(),
+            candidatePath + ".identity"
+        );
+
+        static_cast<void>(
+            finiteNumber(
+                candidate.value(QStringLiteral("score")),
+                candidatePath + ".score",
+                0.0,
+                1.0
+            )
+        );
+        static_cast<void>(
+            requiredString(candidate, "reason", candidatePath, 300)
+        );
+    }
+
+    const QJsonValue confirmedValue =
+        resolution.value(QStringLiteral("confirmed"));
+    if (!confirmedValue.isBool()) {
+        invalid(path + ".confirmed must be a boolean.");
+    }
+
+    const bool confirmed = confirmedValue.toBool();
+    if (
+        confirmed
+        && !hasCurrentIdentity
+        && status != QStringLiteral("custom")
+    ) {
+        invalid(
+            path
+            + " cannot confirm identity without a current identity unless status is custom."
+        );
+    }
+
+    if (
+        status == QStringLiteral("custom")
+        && hasCurrentIdentity
+    ) {
+        invalid(
+            path
+            + " cannot use custom status with a resolved identity."
+        );
+    }
+}
+
 std::set<QString> validateFaces(
     const QJsonArray& faces,
     const std::string& path
@@ -399,6 +759,23 @@ void validatePersistedWorkingCardReferences(
     validateIdentityHints(
         source.value(QStringLiteral("identityHints")).toObject(),
         path + ".identityHints"
+    );
+
+    const QJsonValue identityValue =
+        source.value(QStringLiteral("identity"));
+    const bool hasIdentity = identityValue.isObject();
+
+    if (hasIdentity) {
+        validateCardIdentity(
+            identityValue.toObject(),
+            path + ".identity"
+        );
+    }
+
+    validateIdentityResolution(
+        source.value(QStringLiteral("identityResolution")).toObject(),
+        hasIdentity,
+        path + ".identityResolution"
     );
 
     const std::set<QString> faceSides = validateFaces(
