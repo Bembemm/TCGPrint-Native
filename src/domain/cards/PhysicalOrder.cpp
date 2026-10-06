@@ -6,6 +6,7 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <string_view>
 #include <utility>
 
 namespace tcgprint::cards {
