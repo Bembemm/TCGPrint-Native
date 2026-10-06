@@ -38,6 +38,42 @@ struct Margins final
     bool operator==(const Margins&) const = default;
 };
 
+enum class GuideColor
+{
+    Black,
+    White,
+    Red,
+    Green,
+    Blue,
+};
+
+struct TrimGuideSettings final
+{
+    bool enabled{false};
+    bool fullExtent{false};
+    geometry::Millimeters extent{geometry::Millimeters(1.0)};
+    GuideColor color{GuideColor::Blue};
+
+    bool operator==(const TrimGuideSettings&) const = default;
+};
+
+struct ExternalGuideSettings final
+{
+    bool enabled{false};
+    double strokeWidthPt{0.3};
+    GuideColor color{GuideColor::Black};
+
+    bool operator==(const ExternalGuideSettings&) const = default;
+};
+
+struct CutGuideSettings final
+{
+    TrimGuideSettings trim;
+    ExternalGuideSettings external;
+
+    bool operator==(const CutGuideSettings&) const = default;
+};
+
 enum class ExportContentMode
 {
     FrontOnly,
@@ -83,6 +119,7 @@ struct ProjectPrintSettings final
 {
     geometry::Millimeters bleed;
     bool roundedCorners{false};
+    CutGuideSettings cutGuides;
     PageOrientation pageOrientation{PageOrientation::Portrait};
     PageOrientation cardOrientation{PageOrientation::Portrait};
     PaperFormat paperFormat;
@@ -108,6 +145,7 @@ struct ProjectPrintSettings final
 enum class ProjectSettingsErrorCode
 {
     InvalidBleed,
+    InvalidCutGuides,
     InvalidPaperFormat,
     InvalidCardFormat,
     InvalidMargins,
