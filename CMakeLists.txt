@@ -23,6 +23,22 @@ find_package(
 
 qt_standard_project_setup()
 
+add_library(tcgprint_domain STATIC
+    src/domain/geometry/Millimeters.h
+    src/domain/geometry/CardFormat.h
+    src/domain/geometry/CardFormat.cpp
+    src/domain/cards/WorkingCard.h
+    src/domain/cards/PhysicalOrder.h
+    src/domain/cards/PhysicalOrder.cpp
+)
+
+target_include_directories(tcgprint_domain
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
+
 qt_add_executable(tcgprint
     app/main.cpp
     src/app/AppInfo.cpp
@@ -43,6 +59,7 @@ target_include_directories(tcgprint
 
 target_link_libraries(tcgprint
     PRIVATE
+        tcgprint_domain
         Qt6::Core
         Qt6::Gui
         Qt6::Qml
@@ -77,4 +94,36 @@ target_link_libraries(tcgprint_tests
 add_test(
     NAME tcgprint_tests
     COMMAND tcgprint_tests
+)
+
+qt_add_executable(tcgprint_geometry_tests
+    tests/domain/GeometryTest.cpp
+)
+
+target_link_libraries(tcgprint_geometry_tests
+    PRIVATE
+        tcgprint_domain
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_geometry_tests
+    COMMAND tcgprint_geometry_tests
+)
+
+qt_add_executable(tcgprint_physical_order_tests
+    tests/domain/PhysicalOrderTest.cpp
+)
+
+target_link_libraries(tcgprint_physical_order_tests
+    PRIVATE
+        tcgprint_domain
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_physical_order_tests
+    COMMAND tcgprint_physical_order_tests
 )
