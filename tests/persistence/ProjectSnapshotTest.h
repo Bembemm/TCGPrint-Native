@@ -21,6 +21,7 @@ private slots:
     void rejectsInvalidBackLibraryDigest();
     void rejectsMpcReferenceForMissingFace();
     void serializesCanonicalV6WithoutLosingDurableState();
+    void typedPrintSettingsDriveSerializedV6();
     void promotesLegacySnapshotToSerializedV6();
     void rejectsSettingsFieldsThatDidNotExistInSchema();
     void serializerRejectsBrokenPhysicalOrder();
