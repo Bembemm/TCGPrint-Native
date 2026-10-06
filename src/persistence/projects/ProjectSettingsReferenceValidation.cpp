@@ -6,9 +6,15 @@
 #include <QJsonArray>
 #include <QRegularExpression>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
+#include <numeric>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace tcgprint::projects {
 namespace {
