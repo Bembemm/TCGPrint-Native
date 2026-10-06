@@ -574,16 +574,16 @@ std::set<QString> validateFaces(
                 invalid(facePath + ".slots must be an array.");
             }
 
-            const QJsonArray slots = slotsValue.toArray();
-            if (slots.size() > 100) {
+            const QJsonArray faceSlots = slotsValue.toArray();
+            if (faceSlots.size() > 100) {
                 invalid(facePath + ".slots contains too many entries.");
             }
 
-            for (qsizetype slot = 0; slot < slots.size(); ++slot) {
+            for (qsizetype slotIndex = 0; slotIndex < faceSlots.size(); ++slotIndex) {
                 if (
-                    !slots.at(slot).isString()
-                    || slots.at(slot).toString().trimmed().isEmpty()
-                    || slots.at(slot).toString().size() > 64
+                    !faceSlots.at(slotIndex).isString()
+                    || faceSlots.at(slotIndex).toString().trimmed().isEmpty()
+                    || faceSlots.at(slotIndex).toString().size() > 64
                 ) {
                     invalid(facePath + ".slots contains an invalid slot.");
                 }
