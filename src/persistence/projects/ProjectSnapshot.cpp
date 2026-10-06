@@ -1,4 +1,5 @@
 #include "persistence/projects/ProjectSnapshot.h"
+#include "persistence/projects/PersistedWorkingCardValidation.h"
 
 #include "domain/cards/WorkingCard.h"
 
@@ -653,6 +654,7 @@ std::vector<PersistedWorkingCardCompat> parseCards(
             "snapshot.cards[" + std::to_string(index) + "]";
 
         validatePersistedCardRequiredShape(source, path);
+        validatePersistedWorkingCardReferences(source, version, path);
 
         cards::BackMode backMode;
         cards::BackModeSelectionPolicy selectionPolicy;

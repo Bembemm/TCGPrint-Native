@@ -52,6 +52,8 @@ target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 add_library(tcgprint_projects STATIC
     src/persistence/projects/ProjectSnapshot.h
     src/persistence/projects/ProjectSnapshot.cpp
+    src/persistence/projects/PersistedWorkingCardValidation.h
+    src/persistence/projects/PersistedWorkingCardValidation.cpp
     src/persistence/projects/ProjectRepository.h
     src/persistence/projects/ProjectRepository.cpp
     src/persistence/projects/ProjectDatabase.h
