@@ -1,7 +1,9 @@
 #include "domain/cards/PhysicalOrder.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <numeric>
+#include <utility>
 
 namespace tcgprint::cards {
 

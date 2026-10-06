@@ -2,6 +2,7 @@
 
 #include "domain/cards/WorkingCard.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>

@@ -35,15 +35,15 @@ private slots:
         QCOMPARE(order.nextInstanceId, PhysicalInstanceId{4});
 
         QCOMPARE(order.instances[0].id, PhysicalInstanceId{1});
-        QCOMPARE(order.instances[0].workingCardId, std::string("first"));
+        QCOMPARE(QString::fromStdString(order.instances[0].workingCardId), QStringLiteral("first"));
         QCOMPARE(order.instances[1].id, PhysicalInstanceId{2});
-        QCOMPARE(order.instances[1].workingCardId, std::string("first"));
+        QCOMPARE(QString::fromStdString(order.instances[1].workingCardId), QStringLiteral("first"));
         QCOMPARE(order.instances[2].id, PhysicalInstanceId{3});
-        QCOMPARE(order.instances[2].workingCardId, std::string("later"));
+        QCOMPARE(QString::fromStdString(order.instances[2].workingCardId), QStringLiteral("later"));
 
         QCOMPARE(
-            physicalInstanceIdString(order.instances[1].id),
-            std::string("instance-2")
+            QString::fromStdString(physicalInstanceIdString(order.instances[1].id)),
+            QStringLiteral("instance-2")
         );
     }
 
@@ -76,7 +76,7 @@ private slots:
         );
 
         QCOMPARE(order.instances[0].id, PhysicalInstanceId{3});
-        QCOMPARE(order.instances[0].workingCardId, std::string("mountain"));
+        QCOMPARE(QString::fromStdString(order.instances[0].workingCardId), QStringLiteral("mountain"));
         QCOMPARE(order.instances[1].id, PhysicalInstanceId{1});
         QCOMPARE(order.instances[2].id, PhysicalInstanceId{2});
         QCOMPARE(order.nextInstanceId, PhysicalInstanceId{4});

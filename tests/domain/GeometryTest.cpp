@@ -27,8 +27,8 @@ private slots:
         const CardFormat format = CardFormat::magicStandard();
 
         QVERIFY(format.isValid());
-        QCOMPARE(format.id, std::string("magic-standard"));
-        QCOMPARE(format.name, std::string("Magic Standard"));
+        QCOMPARE(QString::fromStdString(format.id), QStringLiteral("magic-standard"));
+        QCOMPARE(QString::fromStdString(format.name), QStringLiteral("Magic Standard"));
         QCOMPARE(format.trimWidth.value(), 63.5);
         QCOMPARE(format.trimHeight.value(), 88.9);
         QCOMPARE(format.cornerRadius.value(), 3.175);
