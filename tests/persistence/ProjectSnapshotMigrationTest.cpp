@@ -7,6 +7,7 @@
 #include <QJsonObject>
 
 using namespace tcgprint::projects;
+using tcgprint::cards::PhysicalInstanceId;
 
 namespace {
 
