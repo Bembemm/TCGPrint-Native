@@ -49,7 +49,7 @@ jobs:
         run: ./build/ci-release/tcgprint_benchmarks -iterations 1
 
   windows:
-    name: Windows / MSVC 2022 / Qt 6.11.2
+    name: Windows / MSVC 2022 / Qt 6.11.1
     runs-on: windows-2022
 
     steps:
@@ -68,7 +68,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.2"
+          version: "6.11.1"
           host: windows
           target: desktop
           arch: win64_msvc2022_64
