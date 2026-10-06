@@ -14,12 +14,21 @@ find_package(
     Qt6 6.11 REQUIRED
     COMPONENTS
         Core
+        Concurrent
         Gui
         Qml
         Quick
         QuickControls2
         Test
 )
+
+if(QT_KNOWN_POLICY_QTP0001)
+    qt_policy(SET QTP0001 NEW)
+endif()
+
+if(QT_KNOWN_POLICY_QTP0004)
+    qt_policy(SET QTP0004 NEW)
+endif()
 
 qt_standard_project_setup()
 
@@ -39,10 +48,30 @@ target_include_directories(tcgprint_domain
 
 target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 
+add_library(tcgprint_runtime STATIC
+    src/runtime/BackgroundJob.h
+    src/runtime/BackgroundJob.cpp
+)
+
+target_include_directories(tcgprint_runtime
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(tcgprint_runtime
+    PUBLIC
+        Qt6::Core
+        Qt6::Concurrent
+)
+
+target_compile_features(tcgprint_runtime PUBLIC cxx_std_23)
+
 qt_add_executable(tcgprint
     app/main.cpp
     src/app/AppInfo.cpp
     src/app/AppInfo.h
+    src/app/Logging.cpp
+    src/app/Logging.h
 )
 
 qt_add_qml_module(tcgprint
@@ -60,6 +89,7 @@ target_include_directories(tcgprint
 target_link_libraries(tcgprint
     PRIVATE
         tcgprint_domain
+        tcgprint_runtime
         Qt6::Core
         Qt6::Gui
         Qt6::Qml
@@ -126,4 +156,31 @@ target_link_libraries(tcgprint_physical_order_tests
 add_test(
     NAME tcgprint_physical_order_tests
     COMMAND tcgprint_physical_order_tests
+)
+
+qt_add_executable(tcgprint_background_job_tests
+    tests/runtime/BackgroundJobTest.cpp
+)
+
+target_link_libraries(tcgprint_background_job_tests
+    PRIVATE
+        tcgprint_runtime
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_background_job_tests
+    COMMAND tcgprint_background_job_tests
+)
+
+qt_add_executable(tcgprint_benchmarks
+    benchmarks/CoreBenchmarks.cpp
+)
+
+target_link_libraries(tcgprint_benchmarks
+    PRIVATE
+        tcgprint_domain
+        Qt6::Core
+        Qt6::Test
 )

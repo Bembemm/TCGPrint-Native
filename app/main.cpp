@@ -1,3 +1,5 @@
+#include "app/Logging.h"
+
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QLoggingCategory>
@@ -16,7 +18,11 @@ int main(int argc, char *argv[])
                        "[%{type}] [%{category}] %{message}")
     );
 
-    qInfo() << "Starting TCGPrint Native";
+    const QString logPath = tcgprint::logging::initialize();
+
+    qInfo().noquote()
+        << QStringLiteral("Starting TCGPrint Native 0.1.0; log=%1")
+               .arg(logPath.isEmpty() ? QStringLiteral("<stderr-only>") : logPath);
 
     QQmlApplicationEngine engine;
 
@@ -32,5 +38,7 @@ int main(int argc, char *argv[])
 
     engine.loadFromModule("TCGPrint", "App");
 
-    return app.exec();
+    const int result = app.exec();
+    tcgprint::logging::shutdown();
+    return result;
 }
