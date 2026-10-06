@@ -15,6 +15,8 @@ private slots:
     void rejectsCardFieldsThatDidNotExistInSchema();
     void rejectsArtworkForMissingFace();
     void rejectsUnsafeArtworkCandidateId();
+    void rejectsIdentityConfidenceOutsideRange();
+    void rejectsConfirmedResolutionWithoutIdentity();
     void serializesCanonicalV6WithoutLosingDurableState();
     void promotesLegacySnapshotToSerializedV6();
     void rejectsSettingsFieldsThatDidNotExistInSchema();
