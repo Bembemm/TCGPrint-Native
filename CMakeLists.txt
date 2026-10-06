@@ -120,6 +120,8 @@ add_library(tcgprint_import STATIC
     src/import/CsvImport.cpp
     src/import/JsonImport.h
     src/import/JsonImport.cpp
+    src/import/XmlImport.h
+    src/import/XmlImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -374,6 +376,23 @@ target_link_libraries(tcgprint_import_json_tests
 add_test(
     NAME tcgprint_import_json_tests
     COMMAND tcgprint_import_json_tests
+)
+
+
+qt_add_executable(tcgprint_import_xml_tests
+    tests/import/XmlImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_xml_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_xml_tests
+    COMMAND tcgprint_import_xml_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
