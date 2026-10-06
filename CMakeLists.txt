@@ -211,6 +211,7 @@ target_link_libraries(tcgprint_benchmarks
 
 
 qt_add_executable(tcgprint_project_snapshot_tests
+    tests/persistence/ProjectSnapshotTest.h
     tests/persistence/ProjectSnapshotTest.cpp
 )
 
