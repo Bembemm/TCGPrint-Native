@@ -13,6 +13,8 @@ private slots:
     void derivesLegacyDfcBackModeFromProviderMetadata();
     void rejectsIncompleteCurrentWorkingCardShape();
     void rejectsCardFieldsThatDidNotExistInSchema();
+    void rejectsArtworkForMissingFace();
+    void rejectsUnsafeArtworkCandidateId();
     void serializesCanonicalV6WithoutLosingDurableState();
     void promotesLegacySnapshotToSerializedV6();
     void rejectsSettingsFieldsThatDidNotExistInSchema();
