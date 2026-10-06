@@ -94,8 +94,34 @@ private slots:
         const QByteArray json = R"JSON({
           "projectSchemaVersion": 1,
           "cards": [
-            {"id": "later", "quantity": 1, "order": 20},
-            {"id": "first", "quantity": 2, "order": 10}
+            {
+              "id": "later",
+              "quantity": 1,
+              "order": 20,
+              "importSource": {"sourceId": "later-source", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "Later"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Later"}],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            },
+            {
+              "id": "first",
+              "quantity": 2,
+              "order": 10,
+              "importSource": {"sourceId": "first-source", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "First"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "First"}],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            }
           ],
           "settings": {
             "bleedMm": 0.625,
@@ -133,7 +159,15 @@ private slots:
               "id": "card-a",
               "quantity": 1,
               "order": 0,
-              "selectedArtworkByFace": {}
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "Card A"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
             }
           ],
           "settings": {
@@ -172,7 +206,14 @@ private slots:
               "id": "dfc",
               "quantity": 1,
               "order": 0,
+              "importSource": {"sourceId": "dfc-source", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "Front // Back"},
               "identity": {
+                "id": "scryfall:oracle:dfc",
+                "provider": "scryfall",
+                "name": "Front // Back",
+                "resolutionMethod": "manual",
+                "confidence": 1.0,
                 "metadata": {
                   "layout": "transform",
                   "faces": [
@@ -181,7 +222,20 @@ private slots:
                   ]
                 }
               },
-              "selectedArtworkByFace": {}
+              "identityResolution": {
+                "status": "resolved",
+                "method": "manual",
+                "candidates": [],
+                "confirmed": true
+              },
+              "faces": [
+                {"id": "front", "side": "front", "name": "Front"},
+                {"id": "back", "side": "back", "name": "Back"}
+              ],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
             }
           ],
           "settings": {
@@ -241,6 +295,15 @@ private slots:
               "id": "card-a",
               "quantity": 1,
               "order": 0,
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "Card A"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+              "selectedArtworkByFace": {},
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": [],
               "backMode": "none"
             }
           ],
@@ -626,8 +689,38 @@ private slots:
         const QByteArray json = R"JSON({
           "projectSchemaVersion": 5,
           "cards": [
-            {"id": "same", "quantity": 1, "order": 0},
-            {"id": "same", "quantity": 1, "order": 1}
+            {
+              "id": "same",
+              "quantity": 1,
+              "order": 0,
+              "importSource": {"sourceId": "source-1", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "First"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "First"}],
+              "selectedArtworkByFace": {},
+              "backMode": "project-default",
+              "backModeSelectionPolicy": "automatic",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            },
+            {
+              "id": "same",
+              "quantity": 1,
+              "order": 1,
+              "importSource": {"sourceId": "source-2", "importKind": "text", "entryKind": "card"},
+              "identityHints": {"name": "Second"},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Second"}],
+              "selectedArtworkByFace": {},
+              "backMode": "project-default",
+              "backModeSelectionPolicy": "automatic",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            }
           ],
           "settings": {}
         })JSON";
