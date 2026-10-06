@@ -45,6 +45,11 @@ ProjectSnapshotCompat sampleSnapshot(double bleedMm = 0.625)
           "id": "card-a",
           "quantity": 1,
           "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
           "selectedArtworkByFace": {
             "front": {
               "candidateId": "custom:front",
@@ -52,7 +57,12 @@ ProjectSnapshotCompat sampleSnapshot(double bleedMm = 0.625)
               "identityId": null,
               "faceId": "front"
             }
-          }
+          },
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
         }
       ],
       "settings": {

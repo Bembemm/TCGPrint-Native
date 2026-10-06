@@ -17,7 +17,22 @@ ProjectSnapshotCompat snapshot()
     return deserializeProjectSnapshot(R"JSON({
       "projectSchemaVersion": 6,
       "cards": [
-        {"id": "card-a", "quantity": 1, "order": 0}
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
       ],
       "settings": {
         "bleedMm": 0.625,

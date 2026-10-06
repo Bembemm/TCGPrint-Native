@@ -19,14 +19,33 @@ private slots:
               "id": "card-a",
               "quantity": 2,
               "order": 0,
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {},
               "identity": {"id": "abc"},
-              "backMode": "manual"
+              "identityResolution": {"status": "resolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+              "selectedArtworkByFace": {},
+              "backMode": "manual",
+              "backModeSelectionPolicy": "explicit",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
             },
             {
               "id": "card-b",
               "quantity": 1,
               "order": 1,
-              "selectedArtworkByFace": {"front": {"candidateId": "x"}}
+              "importSource": {"sourceId": "source-b", "importKind": "text", "entryKind": "card"},
+              "identityHints": {},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card B"}],
+              "selectedArtworkByFace": {"front": {"candidateId": "x"}},
+              "backMode": "project-default",
+              "backModeSelectionPolicy": "automatic",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
             }
           ],
           "settings": {
@@ -195,18 +214,7 @@ private slots:
             {
               "id": "card-a",
               "quantity": 1,
-              "order": 0,
-              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
-              "identityHints": {},
-              "identity": null,
-              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
-              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
-              "selectedArtworkByFace": {},
-              "backMode": "project-default",
-              "backModeSelectionPolicy": "automatic",
-              "localArtworkIds": [],
-              "mpcReferences": [],
-              "faceAssociations": []
+              "order": 0
             }
           ],
           "settings": {},
@@ -259,12 +267,16 @@ private slots:
               "quantity": 1,
               "order": 0,
               "section": "Main",
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {},
               "identity": {
                 "id": "oracle-a",
                 "provider": "scryfall",
                 "name": "Card A",
                 "metadata": {"layout": "transform"}
               },
+              "identityResolution": {"status": "resolved", "candidates": [], "confirmed": true},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
               "selectedArtworkByFace": {
                 "front": {
                   "candidateId": "scryfall:front",
@@ -274,6 +286,8 @@ private slots:
                 }
               },
               "backMode": "manual",
+              "backModeSelectionPolicy": "explicit",
+              "localArtworkIds": [],
               "manualBackAsset": {
                 "assetId": "back-1",
                 "sha256": "abc",
@@ -286,7 +300,8 @@ private slots:
                   "slots": ["1"],
                   "availableLocally": true
                 }
-              ]
+              ],
+              "faceAssociations": []
             }
           ],
           "settings": {
@@ -480,7 +495,22 @@ private slots:
             deserializeProjectSnapshot(R"JSON({
               "projectSchemaVersion": 6,
               "cards": [
-                {"id": "card-a", "quantity": 1, "order": 0}
+                {
+                  "id": "card-a",
+                  "quantity": 1,
+                  "order": 0,
+                  "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+                  "identityHints": {},
+                  "identity": null,
+                  "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+                  "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+                  "selectedArtworkByFace": {},
+                  "backMode": "project-default",
+                  "backModeSelectionPolicy": "automatic",
+                  "localArtworkIds": [],
+                  "mpcReferences": [],
+                  "faceAssociations": []
+                }
               ],
               "settings": {},
               "physicalOrder": {
@@ -525,7 +555,22 @@ private slots:
         const QByteArray json = R"JSON({
           "projectSchemaVersion": 6,
           "cards": [
-            {"id": "card-a", "quantity": 2, "order": 0}
+            {
+              "id": "card-a",
+              "quantity": 2,
+              "order": 0,
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+              "selectedArtworkByFace": {},
+              "backMode": "project-default",
+              "backModeSelectionPolicy": "automatic",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            }
           ],
           "settings": {},
           "physicalOrder": {
