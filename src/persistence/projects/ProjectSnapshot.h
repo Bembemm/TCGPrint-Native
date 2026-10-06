@@ -56,6 +56,7 @@ struct ProjectSnapshotCompat final
     int sourceSchemaVersion{CurrentProjectSchemaVersion};
     int projectSchemaVersion{CurrentProjectSchemaVersion};
     std::vector<PersistedWorkingCardCompat> cards;
+    std::vector<cards::WorkingCard> workingCards;
     QJsonObject settings;
     ProjectPrintSettings printSettings;
     cards::PhysicalOrder physicalOrder;

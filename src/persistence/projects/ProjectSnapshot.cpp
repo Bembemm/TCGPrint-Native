@@ -1,6 +1,7 @@
 #include "persistence/projects/ProjectSnapshot.h"
 #include "persistence/projects/PersistedWorkingCardValidation.h"
 #include "persistence/projects/ProjectSettingsCodec.h"
+#include "persistence/projects/WorkingCardCodec.h"
 
 #include "domain/cards/WorkingCard.h"
 
@@ -693,19 +694,15 @@ std::vector<PersistedWorkingCardCompat> parseCards(
     return cards;
 }
 
-std::vector<cards::WorkingCard> orderCards(
-    const std::vector<PersistedWorkingCardCompat>& cards
+std::vector<cards::WorkingCard> domainCards(
+    const std::vector<PersistedWorkingCardCompat>& persisted
 )
 {
     std::vector<cards::WorkingCard> result;
-    result.reserve(cards.size());
+    result.reserve(persisted.size());
 
-    for (const PersistedWorkingCardCompat& card : cards) {
-        result.push_back(cards::WorkingCard{
-            .id = card.id,
-            .quantity = card.quantity,
-            .order = card.order,
-        });
+    for (const PersistedWorkingCardCompat& card : persisted) {
+        result.push_back(parseWorkingCardDomain(card.raw));
     }
 
     return result;
@@ -823,22 +820,29 @@ ProjectSnapshotErrorCode ProjectSnapshotError::code() const noexcept
 
 QByteArray serializeProjectSnapshot(const ProjectSnapshotCompat& snapshot)
 {
-    std::vector<cards::WorkingCard> workingCards;
-    workingCards.reserve(snapshot.cards.size());
+    std::vector<cards::WorkingCard> workingCards =
+        snapshot.workingCards;
+
+    if (workingCards.empty() && !snapshot.cards.empty()) {
+        workingCards = domainCards(snapshot.cards);
+    }
 
     QJsonArray persistedCards;
-    for (const PersistedWorkingCardCompat& card : snapshot.cards) {
-        QJsonObject raw = card.raw;
-        raw.insert(QStringLiteral("id"), QString::fromStdString(card.id));
-        raw.insert(QStringLiteral("quantity"), static_cast<double>(card.quantity));
-        raw.insert(QStringLiteral("order"), card.order);
-        persistedCards.append(raw);
+    persistedCards.reserve(
+        static_cast<qsizetype>(workingCards.size())
+    );
 
-        workingCards.push_back(cards::WorkingCard{
-            .id = card.id,
-            .quantity = card.quantity,
-            .order = card.order,
-        });
+    for (std::size_t index = 0; index < workingCards.size(); ++index) {
+        const cards::WorkingCard& card = workingCards[index];
+        QJsonObject raw = serializeWorkingCardDomain(card);
+
+        validatePersistedWorkingCardReferences(
+            raw,
+            CurrentProjectSchemaVersion,
+            "snapshot.cards[" + std::to_string(index) + "]"
+        );
+
+        persistedCards.append(raw);
     }
 
     cards::PhysicalOrder canonicalOrder;
@@ -953,7 +957,7 @@ ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
             version
         );
     const std::vector<cards::WorkingCard> workingCards =
-        orderCards(persistedCards);
+        domainCards(persistedCards);
 
     const QJsonValue settingsValue = root.value(QStringLiteral("settings"));
     if (!settingsValue.isObject()) {
@@ -980,6 +984,7 @@ ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
         .sourceSchemaVersion = version,
         .projectSchemaVersion = CurrentProjectSchemaVersion,
         .cards = persistedCards,
+        .workingCards = workingCards,
         .settings = normalizedSettings,
         .printSettings =
             parseProjectPrintSettings(normalizedSettings),
