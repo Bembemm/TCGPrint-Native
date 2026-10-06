@@ -1,0 +1,62 @@
+#pragma once
+
+#include "domain/cards/PhysicalOrder.h"
+
+#include <QByteArray>
+#include <QJsonObject>
+
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace tcgprint::projects {
+
+inline constexpr int CurrentProjectSchemaVersion = 6;
+inline constexpr std::size_t MaxProjectSnapshotBytes = 16 * 1024 * 1024;
+
+enum class ProjectSnapshotErrorCode
+{
+    InvalidProjectSnapshot,
+    InvalidProjectSchemaVersion,
+    FutureProjectSchemaVersion,
+    UnsupportedProjectSchemaVersion,
+    ProjectSnapshotTooLarge,
+};
+
+class ProjectSnapshotError final : public std::runtime_error
+{
+public:
+    ProjectSnapshotError(ProjectSnapshotErrorCode code, std::string message);
+
+    [[nodiscard]] ProjectSnapshotErrorCode code() const noexcept;
+
+private:
+    ProjectSnapshotErrorCode code_;
+};
+
+struct PersistedWorkingCardCompat final
+{
+    std::string id;
+    std::uint32_t quantity{1};
+    int order{0};
+    QJsonObject raw;
+
+    bool operator==(const PersistedWorkingCardCompat&) const = default;
+};
+
+struct ProjectSnapshotCompat final
+{
+    int sourceSchemaVersion{CurrentProjectSchemaVersion};
+    int projectSchemaVersion{CurrentProjectSchemaVersion};
+    std::vector<PersistedWorkingCardCompat> cards;
+    QJsonObject settings;
+    cards::PhysicalOrder physicalOrder;
+};
+
+[[nodiscard]] ProjectSnapshotCompat deserializeProjectSnapshot(
+    const QByteArray& json
+);
+
+} // namespace tcgprint::projects

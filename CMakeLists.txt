@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(
-    Qt6 6.11 REQUIRED
+    Qt6 6.10 REQUIRED
     COMPONENTS
         Core
         Concurrent
@@ -47,6 +47,24 @@ target_include_directories(tcgprint_domain
 )
 
 target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
+
+add_library(tcgprint_projects STATIC
+    src/persistence/projects/ProjectSnapshot.h
+    src/persistence/projects/ProjectSnapshot.cpp
+)
+
+target_include_directories(tcgprint_projects
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(tcgprint_projects
+    PUBLIC
+        tcgprint_domain
+        Qt6::Core
+)
+
+target_compile_features(tcgprint_projects PUBLIC cxx_std_23)
 
 add_library(tcgprint_runtime STATIC
     src/runtime/BackgroundJob.h
@@ -183,4 +201,21 @@ target_link_libraries(tcgprint_benchmarks
         tcgprint_domain
         Qt6::Core
         Qt6::Test
+)
+
+
+qt_add_executable(tcgprint_project_snapshot_tests
+    tests/persistence/ProjectSnapshotTest.cpp
+)
+
+target_link_libraries(tcgprint_project_snapshot_tests
+    PRIVATE
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_snapshot_tests
+    COMMAND tcgprint_project_snapshot_tests
 )
