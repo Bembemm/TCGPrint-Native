@@ -8,6 +8,129 @@
     );
 }
 
+void ProjectSnapshotTest::rejectsUnsafeFilenameSectionAndDuplicateSlots()
+{
+    const QByteArray absoluteFilename = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [{
+        "id": "card-a",
+        "quantity": 1,
+        "order": 0,
+        "importSource": {
+          "sourceId": "source-a",
+          "filename": "/tmp/card.png",
+          "importKind": "image",
+          "entryKind": "card"
+        },
+        "identityHints": {},
+        "identity": null,
+        "identityResolution": {
+          "status": "unresolved",
+          "candidates": [],
+          "confirmed": false
+        },
+        "faces": [{"id": "front", "side": "front"}],
+        "selectedArtworkByFace": {},
+        "backMode": "project-default",
+        "backModeSelectionPolicy": "automatic",
+        "localArtworkIds": [],
+        "mpcReferences": [],
+        "faceAssociations": []
+      }],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(absoluteFilename)),
+        ProjectSnapshotError
+    );
+
+    const QByteArray longSection = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [{
+        "id": "card-a",
+        "quantity": 1,
+        "order": 0,
+        "section": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "importSource": {
+          "sourceId": "source-a",
+          "importKind": "text",
+          "entryKind": "card"
+        },
+        "identityHints": {},
+        "identity": null,
+        "identityResolution": {
+          "status": "unresolved",
+          "candidates": [],
+          "confirmed": false
+        },
+        "faces": [{"id": "front", "side": "front"}],
+        "selectedArtworkByFace": {},
+        "backMode": "project-default",
+        "backModeSelectionPolicy": "automatic",
+        "localArtworkIds": [],
+        "mpcReferences": [],
+        "faceAssociations": []
+      }],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(longSection)),
+        ProjectSnapshotError
+    );
+
+    const QByteArray duplicateSlots = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [{
+        "id": "card-a",
+        "quantity": 1,
+        "order": 0,
+        "importSource": {
+          "sourceId": "source-a",
+          "importKind": "text",
+          "entryKind": "card"
+        },
+        "identityHints": {},
+        "identity": null,
+        "identityResolution": {
+          "status": "unresolved",
+          "candidates": [],
+          "confirmed": false
+        },
+        "faces": [{
+          "id": "front",
+          "side": "front",
+          "slots": ["1", "1"]
+        }],
+        "selectedArtworkByFace": {},
+        "backMode": "project-default",
+        "backModeSelectionPolicy": "automatic",
+        "localArtworkIds": [],
+        "mpcReferences": [],
+        "faceAssociations": []
+      }],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(duplicateSlots)),
+        ProjectSnapshotError
+    );
+}
+
 void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
 {
     const QByteArray json = R"JSON({
