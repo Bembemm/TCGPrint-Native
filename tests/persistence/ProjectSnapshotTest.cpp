@@ -712,7 +712,7 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
         "exportContentMode": "duplex",
         "missingBackPolicy": "block",
         "duplexFlipMode": "long-edge",
-        "layout": {"skippedSlotIndices": [2, 7]},
+        "layout": {"rows": 3, "columns": 3, "skippedSlotIndices": [2, 7]},
         "printerProfileSelection": {
           "profileId": "printer-a",
           "revision": 3
@@ -779,6 +779,111 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
     QCOMPARE(second.physicalOrder.nextInstanceId, std::uint64_t{2});
     QCOMPARE(second.physicalOrder.instances[0].id, std::uint64_t{1});
     }
+
+void ProjectSnapshotTest::typedPrintSettingsDriveSerializedV6()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {
+        "bleedMm": 0.625,
+        "roundedCorners": false,
+        "cutGuides": {
+          "trim": {"enabled": false, "extentMm": 1.0, "color": "blue"},
+          "external": {"enabled": false, "strokeWidthPt": 0.3, "color": "black"}
+        },
+        "registrationOverride": true
+      },
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    ProjectSnapshotCompat snapshot =
+        deserializeProjectSnapshot(json);
+
+    snapshot.printSettings.bleed =
+        tcgprint::geometry::Millimeters(1.25);
+    snapshot.printSettings.pageOrientation =
+        PageOrientation::Landscape;
+    snapshot.printSettings.exportContentMode =
+        ExportContentMode::Duplex;
+    snapshot.printSettings.layout.rows = 3;
+    snapshot.printSettings.layout.columns = 3;
+    snapshot.printSettings.layout.skippedSlotIndices = {0, 8};
+
+    const QByteArray serialized =
+        serializeProjectSnapshot(snapshot);
+
+    QJsonParseError error;
+    const QJsonDocument document =
+        QJsonDocument::fromJson(serialized, &error);
+    QCOMPARE(error.error, QJsonParseError::NoError);
+
+    const QJsonObject settings =
+        document.object()
+            .value(QStringLiteral("settings"))
+            .toObject();
+
+    QCOMPARE(
+        settings.value(QStringLiteral("bleedMm")).toDouble(),
+        1.25
+    );
+    QCOMPARE(
+        settings.value(QStringLiteral("pageOrientation")).toString(),
+        QStringLiteral("landscape")
+    );
+    QCOMPARE(
+        settings.value(QStringLiteral("exportContentMode")).toString(),
+        QStringLiteral("duplex")
+    );
+    QCOMPARE(
+        settings.value(QStringLiteral("registrationOverride")).toBool(),
+        true
+    );
+
+    const QJsonObject layout =
+        settings.value(QStringLiteral("layout")).toObject();
+    QCOMPARE(layout.value(QStringLiteral("rows")).toInt(), 3);
+    QCOMPARE(layout.value(QStringLiteral("columns")).toInt(), 3);
+    QCOMPARE(
+        layout.value(QStringLiteral("skippedSlotIndices"))
+            .toArray()
+            .size(),
+        2
+    );
+
+    const ProjectSnapshotCompat reread =
+        deserializeProjectSnapshot(serialized);
+
+    QCOMPARE(reread.printSettings.bleed.value(), 1.25);
+    QCOMPARE(
+        reread.printSettings.pageOrientation,
+        PageOrientation::Landscape
+    );
+    QCOMPARE(
+        reread.printSettings.exportContentMode,
+        ExportContentMode::Duplex
+    );
+}
 
 void ProjectSnapshotTest::promotesLegacySnapshotToSerializedV6()
 {
