@@ -76,6 +76,47 @@ QJsonObject card(int schemaVersion)
     return result;
 }
 
+QJsonObject sideCalibration()
+{
+    QJsonObject side;
+    side.insert(QStringLiteral("offsetXUm"), 125);
+    side.insert(QStringLiteral("offsetYUm"), -250);
+    side.insert(QStringLiteral("rotationDeg"), 0.25);
+    side.insert(QStringLiteral("scaleX"), 1.001);
+    side.insert(QStringLiteral("scaleY"), 0.999);
+    side.insert(QStringLiteral("skewXDeg"), 0.1);
+    side.insert(QStringLiteral("skewYDeg"), -0.1);
+    return side;
+}
+
+QJsonObject printerProfile()
+{
+    QJsonObject profile;
+    profile.insert(QStringLiteral("id"), QStringLiteral("printer-a"));
+    profile.insert(QStringLiteral("name"), QStringLiteral("Migration Printer"));
+    profile.insert(QStringLiteral("front"), sideCalibration());
+    profile.insert(QStringLiteral("back"), sideCalibration());
+    profile.insert(QStringLiteral("paperSize"), QStringLiteral("A4"));
+    profile.insert(QStringLiteral("paperWidthMm"), 210.0);
+    profile.insert(QStringLiteral("paperHeightMm"), 297.0);
+    profile.insert(QStringLiteral("pageOrientation"), QStringLiteral("portrait"));
+    profile.insert(
+        QStringLiteral("duplexMode"),
+        QStringLiteral("automatic-long-edge")
+    );
+    profile.insert(
+        QStringLiteral("physicalValidationStatus"),
+        QStringLiteral("software-only")
+    );
+    profile.insert(QStringLiteral("physicalVerification"), QJsonValue::Null);
+    profile.insert(QStringLiteral("version"), 3);
+    profile.insert(
+        QStringLiteral("profileHash"),
+        QString(64, QLatin1Char('c'))
+    );
+    return profile;
+}
+
 QJsonObject settings(int schemaVersion)
 {
     QJsonObject result;
@@ -181,7 +222,10 @@ QJsonObject settings(int schemaVersion)
     }
 
     if (schemaVersion >= 5) {
-        result.insert(QStringLiteral("printerProfileSelection"), QJsonValue::Null);
+        result.insert(
+            QStringLiteral("printerProfileSelection"),
+            printerProfile()
+        );
         result.insert(
             QStringLiteral("printerDuplexMode"),
             QStringLiteral("automatic-long-edge")
@@ -294,6 +338,18 @@ private slots:
                     migrated.printSettings.printerDuplexMode,
                     PrinterDuplexMode::AutomaticLongEdge
                 );
+                const QJsonObject profile =
+                    migrated.settings
+                        .value(QStringLiteral("printerProfileSelection"))
+                        .toObject();
+                QCOMPARE(
+                    profile.value(QStringLiteral("version")).toInt(),
+                    3
+                );
+                QCOMPARE(
+                    profile.value(QStringLiteral("profileHash")).toString(),
+                    QString(64, QLatin1Char('c'))
+                );
             } else {
                 QCOMPARE(
                     migrated.printSettings.printerDuplexMode,
@@ -361,8 +417,51 @@ private slots:
                         .toString(),
                     QStringLiteral("automatic-long-edge")
                 );
+                QCOMPARE(
+                    reread.settings
+                        .value(QStringLiteral("printerProfileSelection"))
+                        .toObject()
+                        .value(QStringLiteral("profileHash"))
+                        .toString(),
+                    QString(64, QLatin1Char('c'))
+                );
             }
         }
+    }
+
+    void rejectsInvalidCalibrationReference()
+    {
+        QJsonDocument document =
+            QJsonDocument::fromJson(snapshotJson(5));
+        QVERIFY(document.isObject());
+
+        QJsonObject root = document.object();
+        QJsonObject projectSettings =
+            root.value(QStringLiteral("settings")).toObject();
+        QJsonObject profile =
+            projectSettings
+                .value(QStringLiteral("printerProfileSelection"))
+                .toObject();
+
+        profile.insert(
+            QStringLiteral("profileHash"),
+            QStringLiteral("not-a-sha")
+        );
+        projectSettings.insert(
+            QStringLiteral("printerProfileSelection"),
+            profile
+        );
+        root.insert(QStringLiteral("settings"), projectSettings);
+
+        const QByteArray invalidJson =
+            QJsonDocument(root).toJson(QJsonDocument::Compact);
+
+        QVERIFY_EXCEPTION_THROWN(
+            static_cast<void>(
+                deserializeProjectSnapshot(invalidJson)
+            ),
+            ProjectSnapshotError
+        );
     }
 };
 
