@@ -176,8 +176,8 @@ private slots:
 
         QCOMPARE(promoted.metadata.revision, 2);
         QCOMPARE(
-            promoted.snapshot.settings.value(QStringLiteral("marker")).toString(),
-            QStringLiteral("recovered")
+            promoted.snapshot.settings.value(QStringLiteral("bleedMm")).toDouble(),
+            1.000
         );
         QVERIFY(!repository.readRecovery(created.metadata.id).has_value());
     }
