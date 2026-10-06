@@ -37,6 +37,19 @@ ProjectPrintSettings ProjectPrintSettings::defaults()
     return ProjectPrintSettings{
         .bleed = geometry::Millimeters(0.625),
         .roundedCorners = false,
+        .cutGuides = CutGuideSettings{
+            .trim = TrimGuideSettings{
+                .enabled = false,
+                .fullExtent = false,
+                .extent = geometry::Millimeters(1.0),
+                .color = GuideColor::Blue,
+            },
+            .external = ExternalGuideSettings{
+                .enabled = false,
+                .strokeWidthPt = 0.3,
+                .color = GuideColor::Black,
+            },
+        },
         .pageOrientation = PageOrientation::Portrait,
         .cardOrientation = PageOrientation::Portrait,
         .paperFormat = PaperFormat::a4(),
@@ -79,6 +92,23 @@ void validateProjectPrintSettings(
         throw ProjectSettingsError(
             ProjectSettingsErrorCode::InvalidBleed,
             "Bleed must be finite and between 0 and 3 mm."
+        );
+    }
+
+    if (
+        (!settings.cutGuides.trim.fullExtent
+         && !finiteBetween(
+             settings.cutGuides.trim.extent,
+             std::numeric_limits<double>::min(),
+             2000.0
+         ))
+        || !std::isfinite(settings.cutGuides.external.strokeWidthPt)
+        || settings.cutGuides.external.strokeWidthPt <= 0.0
+        || settings.cutGuides.external.strokeWidthPt > 100.0
+    ) {
+        throw ProjectSettingsError(
+            ProjectSettingsErrorCode::InvalidCutGuides,
+            "Printed cut guide geometry is invalid."
         );
     }
 
