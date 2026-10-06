@@ -1,0 +1,17 @@
+build/
+build-*/
+cmake-build-*/
+.cache/
+.clangd/
+.vscode/
+.idea/
+
+*.user
+*.user.*
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
+
+*.log
