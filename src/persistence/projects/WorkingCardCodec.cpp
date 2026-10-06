@@ -8,6 +8,7 @@
 
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -348,10 +349,18 @@ QJsonObject identityMetadataJson(
     for (const auto& [key, value] : metadata.scalars) {
         std::visit(
             [&](const auto& scalar) {
-                result.insert(
-                    QString::fromStdString(key),
-                    QJsonValue(scalar)
-                );
+                using Scalar = std::decay_t<decltype(scalar)>;
+                if constexpr (std::is_same_v<Scalar, std::string>) {
+                    result.insert(
+                        QString::fromStdString(key),
+                        QString::fromStdString(scalar)
+                    );
+                } else {
+                    result.insert(
+                        QString::fromStdString(key),
+                        scalar
+                    );
+                }
             },
             value
         );
