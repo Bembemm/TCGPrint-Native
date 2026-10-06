@@ -2,6 +2,7 @@
 
 #include "persistence/projects/ProjectSnapshot.h"
 
+#include <QCryptographicHash>
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QRegularExpression>
@@ -741,6 +742,463 @@ void validateLocalArtworkIds(
     }
 }
 
+QString mpcCandidateId(
+    const QString& importedAssetId,
+    const QString& faceId
+)
+{
+    QByteArray payload = importedAssetId.toUtf8();
+    payload.append('\0');
+    payload.append(faceId.toUtf8());
+
+    return QStringLiteral("mpc:")
+        + QString::fromLatin1(
+            QCryptographicHash::hash(
+                payload,
+                QCryptographicHash::Sha256
+            ).toHex()
+        );
+}
+
+void validateBackLibraryAsset(
+    const QJsonObject& asset,
+    const std::string& path
+)
+{
+    rejectUnsupportedKeys(
+        asset,
+        {
+            QStringLiteral("assetId"),
+            QStringLiteral("sha256"),
+            QStringLiteral("format"),
+        },
+        path
+    );
+
+    const QString sha =
+        requiredString(asset, "sha256", path, 64);
+
+    static const QRegularExpression ShaPattern(
+        QStringLiteral("^[a-f0-9]{64}$")
+    );
+    if (!ShaPattern.match(sha).hasMatch()) {
+        invalid(path + ".sha256 must be a lowercase SHA-256 digest.");
+    }
+
+    const QString assetId =
+        requiredString(asset, "assetId", path, 100);
+    if (assetId != QStringLiteral("back:") + sha) {
+        invalid(path + ".assetId must match the immutable back SHA-256 ID.");
+    }
+
+    const QString format =
+        requiredString(asset, "format", path, 8);
+    if (
+        format != QStringLiteral("jpeg")
+        && format != QStringLiteral("png")
+    ) {
+        invalid(path + ".format must be jpeg or png.");
+    }
+}
+
+void validateMpcReferences(
+    const QJsonArray& references,
+    const std::set<QString>& faceSides,
+    const std::optional<QJsonObject>& manualBackArtwork,
+    const std::string& path
+)
+{
+    if (references.size() > 200) {
+        invalid(path + " contains too many entries.");
+    }
+
+    for (qsizetype index = 0; index < references.size(); ++index) {
+        if (!references.at(index).isObject()) {
+            invalid(path + " entries must be objects.");
+        }
+
+        const QJsonObject reference = references.at(index).toObject();
+        const std::string referencePath =
+            path + "[" + std::to_string(index) + "]";
+
+        rejectUnsupportedKeys(
+            reference,
+            {
+                QStringLiteral("faceId"),
+                QStringLiteral("importedAssetId"),
+                QStringLiteral("providerAssetId"),
+                QStringLiteral("selectedArtworkId"),
+                QStringLiteral("referenceOrigin"),
+                QStringLiteral("providerCardType"),
+                QStringLiteral("slots"),
+                QStringLiteral("availableLocally"),
+            },
+            referencePath
+        );
+
+        const QString faceId =
+            requiredString(reference, "faceId", referencePath, 8);
+        if (
+            faceId != QStringLiteral("front")
+            && faceId != QStringLiteral("back")
+        ) {
+            invalid(referencePath + ".faceId must be front or back.");
+        }
+
+        const QString importedAssetId =
+            requiredString(
+                reference,
+                "importedAssetId",
+                referencePath,
+                180
+            );
+
+        optionalString(
+            reference,
+            "providerAssetId",
+            referencePath,
+            200
+        );
+        optionalString(
+            reference,
+            "selectedArtworkId",
+            referencePath,
+            200
+        );
+
+        if (reference.contains(QStringLiteral("referenceOrigin"))) {
+            const QString origin = requiredString(
+                reference,
+                "referenceOrigin",
+                referencePath,
+                32
+            );
+            if (
+                origin != QStringLiteral("order-import")
+                && origin != QStringLiteral("gallery-selection")
+            ) {
+                invalid(referencePath + ".referenceOrigin is not supported.");
+            }
+        }
+
+        if (reference.contains(QStringLiteral("providerCardType"))) {
+            const QString cardType = requiredString(
+                reference,
+                "providerCardType",
+                referencePath,
+                16
+            );
+            if (
+                cardType != QStringLiteral("CARD")
+                && cardType != QStringLiteral("CARDBACK")
+            ) {
+                invalid(referencePath + ".providerCardType is not supported.");
+            }
+        }
+
+        const QJsonValue slotsValue =
+            reference.value(QStringLiteral("slots"));
+        if (!slotsValue.isArray()) {
+            invalid(referencePath + ".slots must be an array.");
+        }
+
+        const QJsonArray referenceSlots = slotsValue.toArray();
+        if (referenceSlots.size() > 100) {
+            invalid(referencePath + ".slots contains too many entries.");
+        }
+        for (qsizetype slotIndex = 0;
+             slotIndex < referenceSlots.size();
+             ++slotIndex) {
+            if (
+                !referenceSlots.at(slotIndex).isString()
+                || referenceSlots.at(slotIndex).toString().trimmed().isEmpty()
+                || referenceSlots.at(slotIndex).toString().size() > 64
+            ) {
+                invalid(referencePath + ".slots contains an invalid slot.");
+            }
+        }
+
+        if (
+            !reference.value(QStringLiteral("availableLocally")).isBool()
+        ) {
+            invalid(referencePath + ".availableLocally must be a boolean.");
+        }
+
+        bool backsManualArtwork = false;
+        if (manualBackArtwork) {
+            const QJsonObject artwork = *manualBackArtwork;
+            backsManualArtwork =
+                artwork.value(QStringLiteral("source")).toString()
+                    == QStringLiteral("mpc")
+                && artwork.value(QStringLiteral("faceId")).toString()
+                    == faceId
+                && artwork.value(QStringLiteral("candidateId")).toString()
+                    == mpcCandidateId(importedAssetId, faceId);
+        }
+
+        if (
+            !faceSides.contains(faceId)
+            && !backsManualArtwork
+        ) {
+            invalid(
+                referencePath
+                + ".faceId must reference a card face or the selected manual MPC back."
+            );
+        }
+    }
+}
+
+void validateSharedMpcCardback(
+    const QJsonObject& cardback,
+    const std::string& path
+)
+{
+    rejectUnsupportedKeys(
+        cardback,
+        {
+            QStringLiteral("importedAssetId"),
+            QStringLiteral("providerAssetId"),
+            QStringLiteral("selectedArtworkId"),
+            QStringLiteral("originalFormat"),
+            QStringLiteral("availableLocally"),
+            QStringLiteral("provenance"),
+        },
+        path
+    );
+
+    static_cast<void>(
+        requiredString(cardback, "importedAssetId", path, 180)
+    );
+    optionalString(cardback, "providerAssetId", path, 200);
+    optionalString(cardback, "selectedArtworkId", path, 200);
+    static_cast<void>(
+        requiredString(cardback, "originalFormat", path, 80)
+    );
+
+    if (!cardback.value(QStringLiteral("availableLocally")).isBool()) {
+        invalid(path + ".availableLocally must be a boolean.");
+    }
+
+    const QJsonValue provenanceValue =
+        cardback.value(QStringLiteral("provenance"));
+    if (!provenanceValue.isObject()) {
+        invalid(path + ".provenance must be an object.");
+    }
+
+    const QJsonObject provenance = provenanceValue.toObject();
+    rejectUnsupportedKeys(
+        provenance,
+        {
+            QStringLiteral("sourceId"),
+            QStringLiteral("sourceFilename"),
+        },
+        path + ".provenance"
+    );
+
+    static_cast<void>(
+        requiredString(
+            provenance,
+            "sourceId",
+            path + ".provenance",
+            180
+        )
+    );
+    optionalString(
+        provenance,
+        "sourceFilename",
+        path + ".provenance",
+        240
+    );
+}
+
+void validateFaceAssociations(
+    const QJsonArray& associations,
+    const std::string& path
+)
+{
+    if (associations.size() > 200) {
+        invalid(path + " contains too many entries.");
+    }
+
+    for (qsizetype index = 0; index < associations.size(); ++index) {
+        if (!associations.at(index).isObject()) {
+            invalid(path + " entries must be objects.");
+        }
+
+        const QJsonObject association =
+            associations.at(index).toObject();
+        const std::string itemPath =
+            path + "[" + std::to_string(index) + "]";
+
+        rejectUnsupportedKeys(
+            association,
+            {
+                QStringLiteral("slot"),
+                QStringLiteral("frontAssetId"),
+                QStringLiteral("backAssetId"),
+                QStringLiteral("confidence"),
+                QStringLiteral("reason"),
+                QStringLiteral("accepted"),
+            },
+            itemPath
+        );
+
+        static_cast<void>(
+            requiredString(association, "slot", itemPath, 80)
+        );
+        optionalString(
+            association,
+            "frontAssetId",
+            itemPath,
+            180
+        );
+        optionalString(
+            association,
+            "backAssetId",
+            itemPath,
+            180
+        );
+        optionalString(
+            association,
+            "reason",
+            itemPath,
+            300
+        );
+
+        if (association.contains(QStringLiteral("confidence"))) {
+            static_cast<void>(
+                finiteNumber(
+                    association.value(QStringLiteral("confidence")),
+                    itemPath + ".confidence",
+                    0.0,
+                    1.0
+                )
+            );
+        }
+
+        if (
+            association.contains(QStringLiteral("accepted"))
+            && !association.value(QStringLiteral("accepted")).isBool()
+        ) {
+            invalid(itemPath + ".accepted must be a boolean.");
+        }
+    }
+}
+
+void validateBackSemantics(
+    const QJsonObject& source,
+    const std::set<QString>& faceSides,
+    int schemaVersion,
+    const std::string& path
+)
+{
+    std::optional<QJsonObject> manualBackArtwork;
+
+    if (source.contains(QStringLiteral("manualBackAsset"))) {
+        const QJsonValue value =
+            source.value(QStringLiteral("manualBackAsset"));
+        if (!value.isObject()) {
+            invalid(path + ".manualBackAsset must be an object.");
+        }
+        validateBackLibraryAsset(
+            value.toObject(),
+            path + ".manualBackAsset"
+        );
+    }
+
+    if (source.contains(QStringLiteral("manualBackArtwork"))) {
+        const QJsonValue value =
+            source.value(QStringLiteral("manualBackArtwork"));
+        if (!value.isObject()) {
+            invalid(path + ".manualBackArtwork must be an object.");
+        }
+        manualBackArtwork = value.toObject();
+    }
+
+    if (
+        source.contains(QStringLiteral("manualBackAsset"))
+        && manualBackArtwork
+    ) {
+        invalid(
+            path
+            + " cannot contain both manualBackAsset and manualBackArtwork."
+        );
+    }
+
+    validateMpcReferences(
+        source.value(QStringLiteral("mpcReferences")).toArray(),
+        faceSides,
+        manualBackArtwork,
+        path + ".mpcReferences"
+    );
+
+    if (source.contains(QStringLiteral("sharedMpcCardback"))) {
+        const QJsonValue value =
+            source.value(QStringLiteral("sharedMpcCardback"));
+        if (!value.isObject()) {
+            invalid(path + ".sharedMpcCardback must be an object.");
+        }
+        validateSharedMpcCardback(
+            value.toObject(),
+            path + ".sharedMpcCardback"
+        );
+    }
+
+    validateFaceAssociations(
+        source.value(QStringLiteral("faceAssociations")).toArray(),
+        path + ".faceAssociations"
+    );
+
+    QString effectiveMode;
+    if (
+        schemaVersion >= 4
+        && source.value(QStringLiteral("backMode")).isString()
+    ) {
+        effectiveMode =
+            source.value(QStringLiteral("backMode")).toString();
+    } else if (
+        source.contains(QStringLiteral("manualBackAsset"))
+        || manualBackArtwork
+        || source
+            .value(QStringLiteral("selectedArtworkByFace"))
+            .toObject()
+            .value(QStringLiteral("back"))
+            .toObject()
+            .value(QStringLiteral("selectionPolicy"))
+            .toString()
+            == QStringLiteral("user-selected")
+    ) {
+        effectiveMode = QStringLiteral("manual");
+    }
+
+    const bool hasManualSource =
+        source.contains(QStringLiteral("manualBackAsset"))
+        || manualBackArtwork.has_value()
+        || (
+            faceSides.contains(QStringLiteral("back"))
+            && source
+                .value(QStringLiteral("selectedArtworkByFace"))
+                .toObject()
+                .contains(QStringLiteral("back"))
+        );
+
+    if (
+        (source.contains(QStringLiteral("manualBackAsset"))
+         || manualBackArtwork)
+        && !effectiveMode.isEmpty()
+        && effectiveMode != QStringLiteral("manual")
+    ) {
+        invalid(path + " manual back references require manual back mode.");
+    }
+
+    if (
+        effectiveMode == QStringLiteral("manual")
+        && !hasManualSource
+    ) {
+        invalid(path + ".backMode manual requires a manual back source.");
+    }
+}
+
 } // namespace
 
 void validatePersistedWorkingCardReferences(
@@ -818,6 +1276,13 @@ void validatePersistedWorkingCardReferences(
             );
         }
     }
+
+    validateBackSemantics(
+        source,
+        faceSides,
+        schemaVersion,
+        path
+    );
 }
 
 } // namespace tcgprint::projects
