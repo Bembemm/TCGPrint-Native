@@ -52,8 +52,8 @@ ProjectSnapshotCompat sampleSnapshot(double bleedMm = 0.625)
           "faces": [{"id": "front", "side": "front", "name": "Card A"}],
           "selectedArtworkByFace": {
             "front": {
-              "candidateId": "custom:front",
-              "source": "custom",
+              "candidateId": "upload:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "source": "upload",
               "identityId": null,
               "faceId": "front"
             }

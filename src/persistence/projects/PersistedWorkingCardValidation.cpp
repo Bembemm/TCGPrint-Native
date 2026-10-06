@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 
 #include <cmath>
+#include <optional>
 #include <set>
 #include <string_view>
 

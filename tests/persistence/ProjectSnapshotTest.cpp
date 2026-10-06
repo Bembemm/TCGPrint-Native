@@ -34,7 +34,14 @@ void ProjectSnapshotTest::readsV6AndPreservesDurableRawFields()
           "identity": null,
           "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
           "faces": [{"id": "front", "side": "front", "name": "Card B"}],
-          "selectedArtworkByFace": {"front": {"candidateId": "x"}},
+          "selectedArtworkByFace": {
+            "front": {
+              "candidateId": "scryfall:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa:front",
+              "source": "scryfall",
+              "identityId": null,
+              "faceId": "front"
+            }
+          },
           "backMode": "project-default",
           "backModeSelectionPolicy": "automatic",
           "localArtworkIds": [],
@@ -380,7 +387,7 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
           "faces": [{"id": "front", "side": "front", "name": "Card A"}],
           "selectedArtworkByFace": {
             "front": {
-              "candidateId": "scryfall:front",
+              "candidateId": "scryfall:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb:front",
               "source": "scryfall",
               "identityId": "oracle-a",
               "faceId": "front"
