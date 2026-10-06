@@ -34,7 +34,7 @@ private slots:
 
     void movePhysicalInstanceInFiveHundredCopyOrder()
     {
-        std::vector<WorkingCard> cards{
+        const std::vector<WorkingCard> cards{
             WorkingCard{
                 .id = "card",
                 .displayName = "Card",
@@ -46,14 +46,13 @@ private slots:
         const PhysicalOrder baseline = makeLegacyPhysicalOrder(cards);
 
         QBENCHMARK {
-            PhysicalOrder order = baseline;
-            const bool moved = movePhysicalInstance(
-                order,
+            const PhysicalOrder order = movePhysicalInstance(
+                baseline,
                 PhysicalInstanceId{500},
                 PhysicalInstanceId{1},
                 InsertPosition::Before
             );
-            Q_ASSERT(moved);
+            Q_ASSERT(order.instances.front().id == 500);
         }
     }
 };
