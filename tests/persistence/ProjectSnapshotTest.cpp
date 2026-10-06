@@ -187,6 +187,43 @@ private slots:
         );
     }
 
+    void rejectsIncompleteCurrentWorkingCardShape()
+    {
+        const QByteArray invalidCurrent = R"JSON({
+          "projectSchemaVersion": 6,
+          "cards": [
+            {
+              "id": "card-a",
+              "quantity": 1,
+              "order": 0,
+              "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+              "identityHints": {},
+              "identity": null,
+              "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+              "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+              "selectedArtworkByFace": {},
+              "backMode": "project-default",
+              "backModeSelectionPolicy": "automatic",
+              "localArtworkIds": [],
+              "mpcReferences": [],
+              "faceAssociations": []
+            }
+          ],
+          "settings": {},
+          "physicalOrder": {
+            "nextInstanceId": 2,
+            "instances": [
+              {"id": "instance-1", "workingCardId": "card-a"}
+            ]
+          }
+        })JSON";
+
+        QVERIFY_EXCEPTION_THROWN(
+            static_cast<void>(deserializeProjectSnapshot(invalidCurrent)),
+            ProjectSnapshotError
+        );
+    }
+
     void rejectsCardFieldsThatDidNotExistInSchema()
     {
         const QByteArray invalidLegacy = R"JSON({

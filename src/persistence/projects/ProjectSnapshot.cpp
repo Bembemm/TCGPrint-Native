@@ -7,6 +7,7 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 
+#include <array>
 #include <cmath>
 #include <limits>
 #include <set>
@@ -487,6 +488,98 @@ cards::BackModeSelectionPolicy parseBackModeSelectionPolicy(
         : cards::BackModeSelectionPolicy::Automatic;
 }
 
+void validateCurrentCardRequiredShape(
+    const QJsonObject& source,
+    const std::string& path
+)
+{
+    const std::array<const char*, 8> objectOrArrayKeys{
+        "importSource",
+        "identityHints",
+        "identityResolution",
+        "faces",
+        "selectedArtworkByFace",
+        "localArtworkIds",
+        "mpcReferences",
+        "faceAssociations",
+    };
+
+    for (const char* key : objectOrArrayKeys) {
+        if (!source.contains(QLatin1String(key))) {
+            invalid(path + "." + key + " is required in schema v6.");
+        }
+    }
+
+    if (!source.value(QStringLiteral("importSource")).isObject()) {
+        invalid(path + ".importSource must be an object.");
+    }
+    if (!source.value(QStringLiteral("identityHints")).isObject()) {
+        invalid(path + ".identityHints must be an object.");
+    }
+
+    const QJsonValue identity = source.value(QStringLiteral("identity"));
+    if (!source.contains(QStringLiteral("identity"))) {
+        invalid(path + ".identity is required in schema v6.");
+    }
+    if (!identity.isNull() && !identity.isObject()) {
+        invalid(path + ".identity must be null or an object.");
+    }
+
+    if (!source.value(QStringLiteral("identityResolution")).isObject()) {
+        invalid(path + ".identityResolution must be an object.");
+    }
+    if (!source.value(QStringLiteral("faces")).isArray()) {
+        invalid(path + ".faces must be an array.");
+    }
+    if (!source.value(QStringLiteral("selectedArtworkByFace")).isObject()) {
+        invalid(path + ".selectedArtworkByFace must be an object.");
+    }
+    if (!source.value(QStringLiteral("localArtworkIds")).isArray()) {
+        invalid(path + ".localArtworkIds must be an array.");
+    }
+    if (!source.value(QStringLiteral("mpcReferences")).isArray()) {
+        invalid(path + ".mpcReferences must be an array.");
+    }
+    if (!source.value(QStringLiteral("faceAssociations")).isArray()) {
+        invalid(path + ".faceAssociations must be an array.");
+    }
+
+    const QJsonArray faces = source.value(QStringLiteral("faces")).toArray();
+    if (faces.isEmpty() || faces.size() > 2) {
+        invalid(path + ".faces must contain one front face and at most one back face.");
+    }
+
+    bool hasFront = false;
+    bool hasBack = false;
+
+    for (const QJsonValue& faceValue : faces) {
+        if (!faceValue.isObject()) {
+            invalid(path + ".faces entries must be objects.");
+        }
+
+        const QJsonObject face = faceValue.toObject();
+        const QString side = face.value(QStringLiteral("side")).toString();
+
+        if (side == QStringLiteral("front")) {
+            if (hasFront) {
+                invalid(path + ".faces must not contain duplicate front faces.");
+            }
+            hasFront = true;
+        } else if (side == QStringLiteral("back")) {
+            if (hasBack) {
+                invalid(path + ".faces must not contain duplicate back faces.");
+            }
+            hasBack = true;
+        } else {
+            invalid(path + ".faces side must be front or back.");
+        }
+    }
+
+    if (!hasFront) {
+        invalid(path + ".faces must contain a front face.");
+    }
+}
+
 QJsonObject normalizeCardTopLevel(
     const QJsonObject& source,
     int version,
@@ -556,6 +649,13 @@ std::vector<PersistedWorkingCardCompat> parseCards(
         }
 
         const QJsonObject source = value.toObject();
+        const std::string path =
+            "snapshot.cards[" + std::to_string(index) + "]";
+
+        if (version >= CurrentProjectSchemaVersion) {
+            validateCurrentCardRequiredShape(source, path);
+        }
+
         cards::BackMode backMode;
         cards::BackModeSelectionPolicy selectionPolicy;
         const QJsonObject raw = normalizeCardTopLevel(
@@ -564,9 +664,6 @@ std::vector<PersistedWorkingCardCompat> parseCards(
             backMode,
             selectionPolicy
         );
-        const std::string path =
-            "snapshot.cards[" + std::to_string(index) + "]";
-
         const std::string id = requiredString(raw, "id", path);
         const std::uint32_t quantity =
             positiveQuantity(raw.value(QStringLiteral("quantity")), path + ".quantity");
