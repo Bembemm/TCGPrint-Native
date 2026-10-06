@@ -80,6 +80,24 @@ target_link_libraries(tcgprint_projects
 
 target_compile_features(tcgprint_projects PUBLIC cxx_std_23)
 
+add_library(tcgprint_application STATIC
+    src/application/ProjectSession.h
+    src/application/ProjectSession.cpp
+)
+
+target_include_directories(tcgprint_application
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(tcgprint_application
+    PUBLIC
+        tcgprint_projects
+        Qt6::Core
+)
+
+target_compile_features(tcgprint_application PUBLIC cxx_std_23)
+
 add_library(tcgprint_runtime STATIC
     src/runtime/BackgroundJob.h
     src/runtime/BackgroundJob.cpp
@@ -313,4 +331,23 @@ target_link_libraries(tcgprint_project_inspect
         tcgprint_projects
         Qt6::Core
         Qt6::Sql
+)
+
+
+qt_add_executable(tcgprint_project_session_tests
+    tests/application/ProjectSessionTest.cpp
+)
+
+target_link_libraries(tcgprint_project_session_tests
+    PRIVATE
+        tcgprint_application
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_session_tests
+    COMMAND tcgprint_project_session_tests
 )
