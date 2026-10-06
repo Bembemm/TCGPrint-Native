@@ -38,6 +38,8 @@ add_library(tcgprint_domain STATIC
     src/domain/geometry/CardFormat.h
     src/domain/geometry/CardFormat.cpp
     src/domain/cards/WorkingCard.h
+    src/domain/cards/WorkingSet.h
+    src/domain/cards/WorkingSet.cpp
     src/domain/cards/PhysicalOrder.h
     src/domain/cards/PhysicalOrder.cpp
 )
@@ -182,6 +184,22 @@ target_link_libraries(tcgprint_physical_order_tests
 add_test(
     NAME tcgprint_physical_order_tests
     COMMAND tcgprint_physical_order_tests
+)
+
+qt_add_executable(tcgprint_working_set_tests
+    tests/domain/WorkingSetTest.cpp
+)
+
+target_link_libraries(tcgprint_working_set_tests
+    PRIVATE
+        tcgprint_domain
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_working_set_tests
+    COMMAND tcgprint_working_set_tests
 )
 
 qt_add_executable(tcgprint_background_job_tests
