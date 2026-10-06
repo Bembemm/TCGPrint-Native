@@ -714,8 +714,31 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
         "duplexFlipMode": "long-edge",
         "layout": {"rows": 3, "columns": 3, "skippedSlotIndices": [2, 7]},
         "printerProfileSelection": {
-          "profileId": "printer-a",
-          "revision": 3
+          "id": "printer-a",
+          "name": "Printer A",
+          "front": {
+            "offsetXUm": 0,
+            "offsetYUm": 0,
+            "rotationDeg": 0,
+            "scaleX": 1,
+            "scaleY": 1
+          },
+          "back": {
+            "offsetXUm": 0,
+            "offsetYUm": 0,
+            "rotationDeg": 0,
+            "scaleX": 1,
+            "scaleY": 1
+          },
+          "paperSize": "A4",
+          "paperWidthMm": 210,
+          "paperHeightMm": 297,
+          "pageOrientation": "portrait",
+          "duplexMode": "single-sided",
+          "physicalValidationStatus": "software-only",
+          "physicalVerification": null,
+          "version": 3,
+          "profileHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
         }
       },
       "physicalOrder": {
