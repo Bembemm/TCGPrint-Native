@@ -57,6 +57,45 @@ private slots:
         ));
     }
 
+    void opensExistingDatabaseReadOnly()
+    {
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+
+        const QString path = projectDatabasePath(directory.path());
+
+        {
+            QSqlDatabase database = openProjectDatabase(
+                path,
+                uniqueConnection(QStringLiteral("seed"))
+            );
+            {
+                ProjectRepository repository(database);
+                static_cast<void>(
+                    repository.create(snapshot(), "Read Only Project")
+                );
+            }
+            closeProjectDatabase(database);
+        }
+
+        {
+            QSqlDatabase database = openProjectDatabaseReadOnly(
+                path,
+                uniqueConnection(QStringLiteral("readonly"))
+            );
+            {
+                ProjectRepository repository(database);
+                const auto projects = repository.list();
+                QCOMPARE(projects.size(), std::size_t{1});
+                QCOMPARE(
+                    QString::fromStdString(projects[0].name),
+                    QStringLiteral("Read Only Project")
+                );
+            }
+            closeProjectDatabase(database);
+        }
+    }
+
     void persistsProjectAcrossDatabaseReopen()
     {
         QTemporaryDir directory;
@@ -70,12 +109,13 @@ private slots:
                 path,
                 uniqueConnection(QStringLiteral("write"))
             );
-            ProjectRepository repository(database);
+            {
+                ProjectRepository repository(database);
 
-            const ProjectRecord created =
-                repository.create(snapshot(), "Disk Project");
-            projectId = created.metadata.id;
-
+                const ProjectRecord created =
+                    repository.create(snapshot(), "Disk Project");
+                projectId = created.metadata.id;
+            }
             closeProjectDatabase(database);
         }
 
@@ -86,16 +126,17 @@ private slots:
                 path,
                 uniqueConnection(QStringLiteral("read"))
             );
-            ProjectRepository repository(database);
+            {
+                ProjectRepository repository(database);
 
-            const ProjectRecord reopened = repository.open(projectId);
-            QCOMPARE(
-                QString::fromStdString(reopened.metadata.name),
-                QStringLiteral("Disk Project")
-            );
-            QCOMPARE(reopened.metadata.revision, 1);
-            QCOMPARE(reopened.snapshot.cards.size(), std::size_t{1});
-
+                const ProjectRecord reopened = repository.open(projectId);
+                QCOMPARE(
+                    QString::fromStdString(reopened.metadata.name),
+                    QStringLiteral("Disk Project")
+                );
+                QCOMPARE(reopened.metadata.revision, 1);
+                QCOMPARE(reopened.snapshot.cards.size(), std::size_t{1});
+            }
             closeProjectDatabase(database);
         }
     }

@@ -12,6 +12,11 @@ namespace tcgprint::projects {
     const QString& connectionName
 );
 
+[[nodiscard]] QSqlDatabase openProjectDatabaseReadOnly(
+    const QString& databasePath,
+    const QString& connectionName
+);
+
 void closeProjectDatabase(QSqlDatabase& database);
 
 } // namespace tcgprint::projects

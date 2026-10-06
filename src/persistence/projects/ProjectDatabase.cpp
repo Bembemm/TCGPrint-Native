@@ -9,18 +9,12 @@
 #include <stdexcept>
 
 namespace tcgprint::projects {
+namespace {
 
-QString projectDatabasePath(const QString& baseDirectory)
-{
-    QDir base(baseDirectory);
-    return QDir::cleanPath(
-        base.filePath(QStringLiteral(".tcgprint/projects.sqlite"))
-    );
-}
-
-QSqlDatabase openProjectDatabase(
+QSqlDatabase openDatabase(
     const QString& databasePath,
-    const QString& connectionName
+    const QString& connectionName,
+    bool readOnly
 )
 {
     if (connectionName.trimmed().isEmpty()) {
@@ -35,7 +29,7 @@ QSqlDatabase openProjectDatabase(
         );
     }
 
-    if (databasePath != QStringLiteral(":memory:")) {
+    if (!readOnly && databasePath != QStringLiteral(":memory:")) {
         const QFileInfo info(databasePath);
         QDir directory;
         if (!directory.mkpath(info.absolutePath())) {
@@ -46,8 +40,24 @@ QSqlDatabase openProjectDatabase(
         }
     }
 
+    if (
+        readOnly
+        && databasePath != QStringLiteral(":memory:")
+        && !QFileInfo::exists(databasePath)
+    ) {
+        throw ProjectRepositoryError(
+            ProjectRepositoryErrorCode::DatabaseError,
+            "Read-only Project database does not exist."
+        );
+    }
+
     QSqlDatabase database =
         QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
+
+    if (readOnly) {
+        database.setConnectOptions(QStringLiteral("QSQLITE_OPEN_READONLY"));
+    }
+
     database.setDatabaseName(databasePath);
 
     if (!database.open()) {
@@ -73,6 +83,32 @@ QSqlDatabase openProjectDatabase(
         QSqlDatabase::removeDatabase(connectionName);
         throw;
     }
+}
+
+} // namespace
+
+QString projectDatabasePath(const QString& baseDirectory)
+{
+    QDir base(baseDirectory);
+    return QDir::cleanPath(
+        base.filePath(QStringLiteral(".tcgprint/projects.sqlite"))
+    );
+}
+
+QSqlDatabase openProjectDatabase(
+    const QString& databasePath,
+    const QString& connectionName
+)
+{
+    return openDatabase(databasePath, connectionName, false);
+}
+
+QSqlDatabase openProjectDatabaseReadOnly(
+    const QString& databasePath,
+    const QString& connectionName
+)
+{
+    return openDatabase(databasePath, connectionName, true);
 }
 
 void closeProjectDatabase(QSqlDatabase& database)

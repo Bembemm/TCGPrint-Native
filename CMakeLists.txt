@@ -261,3 +261,15 @@ add_test(
     NAME tcgprint_project_database_tests
     COMMAND tcgprint_project_database_tests
 )
+
+
+qt_add_executable(tcgprint_project_inspect
+    tools/ProjectInspect.cpp
+)
+
+target_link_libraries(tcgprint_project_inspect
+    PRIVATE
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Sql
+)
