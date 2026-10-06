@@ -254,6 +254,6 @@ private slots:
     }
 };
 
-QTEST_APPLESS_MAIN(ProjectRepositoryTest)
+QTEST_GUILESS_MAIN(ProjectRepositoryTest)
 
 #include "ProjectRepositoryTest.moc"
