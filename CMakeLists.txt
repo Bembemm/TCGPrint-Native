@@ -54,6 +54,8 @@ add_library(tcgprint_projects STATIC
     src/persistence/projects/ProjectSnapshot.cpp
     src/persistence/projects/ProjectRepository.h
     src/persistence/projects/ProjectRepository.cpp
+    src/persistence/projects/ProjectDatabase.h
+    src/persistence/projects/ProjectDatabase.cpp
 )
 
 target_include_directories(tcgprint_projects
@@ -240,4 +242,22 @@ target_link_libraries(tcgprint_project_repository_tests
 add_test(
     NAME tcgprint_project_repository_tests
     COMMAND tcgprint_project_repository_tests
+)
+
+
+qt_add_executable(tcgprint_project_database_tests
+    tests/persistence/ProjectDatabaseTest.cpp
+)
+
+target_link_libraries(tcgprint_project_database_tests
+    PRIVATE
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_database_tests
+    COMMAND tcgprint_project_database_tests
 )

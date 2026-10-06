@@ -93,6 +93,8 @@ public:
         const ProjectSnapshotCompat& snapshot
     );
 
+    [[nodiscard]] ProjectRecord duplicate(const std::string& projectId);
+
     void remove(const std::string& projectId);
 
     [[nodiscard]] ProjectRecoveryRecord stageRecovery(
@@ -106,6 +108,7 @@ public:
     ) const;
 
     [[nodiscard]] ProjectRecord promoteRecovery(const std::string& projectId);
+    [[nodiscard]] ProjectRecord copyRecovery(const std::string& projectId);
     void discardRecovery(const std::string& projectId);
 
 private:

@@ -216,6 +216,87 @@ private slots:
         }
     }
 
+    void duplicatesProjectsWithFreshIdentity()
+    {
+        TestDatabase storage;
+        ProjectRepository repository(storage.database);
+
+        const ProjectRecord original =
+            repository.create(sampleSnapshot(), "Original");
+        const ProjectRecord duplicate =
+            repository.duplicate(original.metadata.id);
+
+        QVERIFY(duplicate.metadata.id != original.metadata.id);
+        QCOMPARE(duplicate.metadata.revision, 1);
+        QCOMPARE(
+            QString::fromStdString(duplicate.metadata.name),
+            QStringLiteral("Original (cópia)")
+        );
+        QCOMPARE(
+            duplicate.snapshot.settings.value(QStringLiteral("marker")).toString(),
+            QStringLiteral("initial")
+        );
+        QCOMPARE(repository.list().size(), std::size_t{2});
+    }
+
+    void deleteCascadesStagedRecovery()
+    {
+        TestDatabase storage;
+        ProjectRepository repository(storage.database);
+
+        const ProjectRecord created =
+            repository.create(sampleSnapshot());
+        static_cast<void>(
+            repository.stageRecovery(
+                created.metadata.id,
+                1,
+                sampleSnapshot(QStringLiteral("recover-me"))
+            )
+        );
+
+        repository.remove(created.metadata.id);
+        QVERIFY(!repository.get(created.metadata.id).has_value());
+
+        QSqlQuery count(storage.database);
+        QVERIFY(count.exec(QStringLiteral(
+            "SELECT COUNT(*) FROM project_recovery"
+        )));
+        QVERIFY(count.next());
+        QCOMPARE(count.value(0).toInt(), 0);
+    }
+
+    void copiesRecoveryToFreshProjectAndClearsCandidate()
+    {
+        TestDatabase storage;
+        ProjectRepository repository(storage.database);
+
+        const ProjectRecord source =
+            repository.create(sampleSnapshot(), "Source");
+        static_cast<void>(
+            repository.stageRecovery(
+                source.metadata.id,
+                1,
+                sampleSnapshot(QStringLiteral("recovered-copy"))
+            )
+        );
+
+        const ProjectRecord copy =
+            repository.copyRecovery(source.metadata.id);
+
+        QVERIFY(copy.metadata.id != source.metadata.id);
+        QCOMPARE(copy.metadata.revision, 1);
+        QCOMPARE(
+            QString::fromStdString(copy.metadata.name),
+            QStringLiteral("Source (recuperado)")
+        );
+        QCOMPARE(
+            copy.snapshot.settings.value(QStringLiteral("marker")).toString(),
+            QStringLiteral("recovered-copy")
+        );
+        QVERIFY(!repository.readRecovery(source.metadata.id).has_value());
+        QCOMPARE(repository.list().size(), std::size_t{2});
+    }
+
     void acceptsLegacySchemaFiveDatabaseWithoutRewritingIt()
     {
         TestDatabase storage;

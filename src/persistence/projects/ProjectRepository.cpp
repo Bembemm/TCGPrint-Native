@@ -422,6 +422,16 @@ ProjectRecord ProjectRepository::save(
     return open(projectId);
 }
 
+ProjectRecord ProjectRepository::duplicate(const std::string& projectId)
+{
+    const ProjectRecord original = open(projectId);
+
+    return create(
+        original.snapshot,
+        original.metadata.name + " (cópia)"
+    );
+}
+
 void ProjectRepository::remove(const std::string& projectId)
 {
     QSqlQuery query(database_);
@@ -638,6 +648,55 @@ ProjectRecord ProjectRepository::promoteRecovery(
 
         commit(database_);
         return open(projectId);
+    } catch (...) {
+        rollbackNoThrow(database_);
+        throw;
+    }
+}
+
+ProjectRecord ProjectRepository::copyRecovery(const std::string& projectId)
+{
+    beginImmediate(database_);
+    try {
+        const ProjectRecord source = open(projectId);
+        const auto recovery = readRecovery(projectId);
+
+        if (!recovery) {
+            throw ProjectRepositoryError(
+                ProjectRepositoryErrorCode::ProjectRecoveryNotFound,
+                "Project has no staged recovery candidate."
+            );
+        }
+
+        ProjectRecord copy = create(
+            recovery->snapshot,
+            source.metadata.name + " (recuperado)"
+        );
+
+        QSqlQuery remove(database_);
+        remove.prepare(
+            QStringLiteral(
+                "DELETE FROM project_recovery WHERE project_id = ?"
+            )
+        );
+        bindProjectId(remove, projectId);
+
+        if (!remove.exec()) {
+            databaseError(
+                QStringLiteral("Could not clear copied recovery"),
+                remove.lastError()
+            );
+        }
+
+        if (remove.numRowsAffected() != 1) {
+            throw ProjectRepositoryError(
+                ProjectRepositoryErrorCode::ProjectRecoveryNotFound,
+                "Recovery changed while being copied."
+            );
+        }
+
+        commit(database_);
+        return copy;
     } catch (...) {
         rollbackNoThrow(database_);
         throw;
