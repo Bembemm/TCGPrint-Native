@@ -1,6 +1,7 @@
 #include "persistence/projects/ProjectSettingsCodec.h"
 
 #include "persistence/projects/ProjectSnapshot.h"
+#include "persistence/projects/ProjectSettingsReferenceValidation.h"
 
 #include <QJsonArray>
 #include <QJsonValue>
@@ -245,6 +246,8 @@ ProjectPrintSettings parseProjectPrintSettings(
     const QJsonObject& settings
 )
 {
+    validateProjectSettingsReferences(settings);
+
     ProjectPrintSettings result = ProjectPrintSettings::defaults();
 
     result.bleed = geometry::Millimeters(

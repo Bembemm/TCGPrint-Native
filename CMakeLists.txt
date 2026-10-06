@@ -58,6 +58,8 @@ add_library(tcgprint_projects STATIC
     src/persistence/projects/ProjectSnapshot.cpp
     src/persistence/projects/ProjectSettingsCodec.h
     src/persistence/projects/ProjectSettingsCodec.cpp
+    src/persistence/projects/ProjectSettingsReferenceValidation.h
+    src/persistence/projects/ProjectSettingsReferenceValidation.cpp
     src/persistence/projects/PersistedWorkingCardValidation.h
     src/persistence/projects/PersistedWorkingCardValidation.cpp
     src/persistence/projects/ProjectRepository.h
