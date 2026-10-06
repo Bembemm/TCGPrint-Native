@@ -59,4 +59,8 @@ struct ProjectSnapshotCompat final
     const QByteArray& json
 );
 
+[[nodiscard]] QByteArray serializeProjectSnapshot(
+    const ProjectSnapshotCompat& snapshot
+);
+
 } // namespace tcgprint::projects

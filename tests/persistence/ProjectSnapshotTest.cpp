@@ -105,6 +105,200 @@ private slots:
         );
     }
 
+    void serializesCanonicalV6WithoutLosingDurableState()
+    {
+        const QByteArray json = R"JSON({
+          "projectSchemaVersion": 6,
+          "cards": [
+            {
+              "id": "card-a",
+              "quantity": 1,
+              "order": 0,
+              "section": "Main",
+              "identity": {
+                "id": "oracle-a",
+                "provider": "scryfall",
+                "name": "Card A",
+                "metadata": {"layout": "transform"}
+              },
+              "selectedArtworkByFace": {
+                "front": {
+                  "candidateId": "scryfall:front",
+                  "source": "scryfall",
+                  "identityId": "oracle-a",
+                  "faceId": "front"
+                }
+              },
+              "backMode": "manual",
+              "manualBackAsset": {
+                "assetId": "back-1",
+                "sha256": "abc",
+                "format": "png"
+              },
+              "mpcReferences": [
+                {
+                  "faceId": "front",
+                  "importedAssetId": "mpc-1",
+                  "slots": ["1"],
+                  "availableLocally": true
+                }
+              ]
+            }
+          ],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": true,
+            "exportContentMode": "duplex",
+            "missingBackPolicy": "block",
+            "duplexFlipMode": "long-edge",
+            "layout": {"skippedSlotIndices": [2, 7]},
+            "printerProfileSelection": {
+              "profileId": "printer-a",
+              "revision": 3
+            }
+          },
+          "physicalOrder": {
+            "nextInstanceId": 2,
+            "instances": [
+              {"id": "instance-1", "workingCardId": "card-a"}
+            ]
+          }
+        })JSON";
+
+        const ProjectSnapshotCompat first =
+            deserializeProjectSnapshot(json);
+        const QByteArray serialized =
+            serializeProjectSnapshot(first);
+        const ProjectSnapshotCompat second =
+            deserializeProjectSnapshot(serialized);
+
+        QCOMPARE(second.sourceSchemaVersion, 6);
+        QCOMPARE(second.projectSchemaVersion, 6);
+        QCOMPARE(second.cards.size(), std::size_t{1});
+        QCOMPARE(
+            second.cards[0].raw.value(QStringLiteral("section")).toString(),
+            QStringLiteral("Main")
+        );
+        QVERIFY(
+            second.cards[0].raw
+                .value(QStringLiteral("identity"))
+                .toObject()
+                .value(QStringLiteral("metadata"))
+                .toObject()
+                .contains(QStringLiteral("layout"))
+        );
+        QVERIFY(
+            second.cards[0].raw.contains(
+                QStringLiteral("manualBackAsset")
+            )
+        );
+        QVERIFY(
+            second.cards[0].raw.contains(
+                QStringLiteral("mpcReferences")
+            )
+        );
+        QCOMPARE(
+            second.settings.value(QStringLiteral("missingBackPolicy")).toString(),
+            QStringLiteral("block")
+        );
+        QCOMPARE(
+            second.settings
+                .value(QStringLiteral("layout"))
+                .toObject()
+                .value(QStringLiteral("skippedSlotIndices"))
+                .toArray()
+                .size(),
+            2
+        );
+        QVERIFY(
+            second.settings.contains(
+                QStringLiteral("printerProfileSelection")
+            )
+        );
+        QCOMPARE(second.physicalOrder.nextInstanceId, std::uint64_t{2});
+        QCOMPARE(second.physicalOrder.instances[0].id, std::uint64_t{1});
+    }
+
+    void promotesLegacySnapshotToSerializedV6()
+    {
+        const QByteArray legacy = R"JSON({
+          "projectSchemaVersion": 3,
+          "cards": [
+            {
+              "id": "card-a",
+              "quantity": 2,
+              "order": 0,
+              "identity": {"id": "keep-me"},
+              "selectedArtworkByFace": {"front": {"candidateId": "keep-me-too"}}
+            }
+          ],
+          "settings": {
+            "bleedMm": 0.625,
+            "roundedCorners": false,
+            "cutGuides": {},
+            "legacySetting": "preserved"
+          }
+        })JSON";
+
+        const ProjectSnapshotCompat migrated =
+            deserializeProjectSnapshot(legacy);
+        const QByteArray serialized =
+            serializeProjectSnapshot(migrated);
+
+        QJsonParseError error;
+        const QJsonDocument document =
+            QJsonDocument::fromJson(serialized, &error);
+        QCOMPARE(error.error, QJsonParseError::NoError);
+        QVERIFY(document.isObject());
+
+        const QJsonObject root = document.object();
+        QCOMPARE(
+            root.value(QStringLiteral("projectSchemaVersion")).toInt(),
+            6
+        );
+        QVERIFY(root.contains(QStringLiteral("physicalOrder")));
+
+        const ProjectSnapshotCompat reread =
+            deserializeProjectSnapshot(serialized);
+        QCOMPARE(reread.sourceSchemaVersion, 6);
+        QCOMPARE(reread.physicalOrder.instances.size(), std::size_t{2});
+        QVERIFY(
+            reread.cards[0].raw.contains(
+                QStringLiteral("selectedArtworkByFace")
+            )
+        );
+        QCOMPARE(
+            reread.settings.value(QStringLiteral("legacySetting")).toString(),
+            QStringLiteral("preserved")
+        );
+    }
+
+    void serializerRejectsBrokenPhysicalOrder()
+    {
+        const ProjectSnapshotCompat valid =
+            deserializeProjectSnapshot(R"JSON({
+              "projectSchemaVersion": 6,
+              "cards": [
+                {"id": "card-a", "quantity": 1, "order": 0}
+              ],
+              "settings": {},
+              "physicalOrder": {
+                "nextInstanceId": 2,
+                "instances": [
+                  {"id": "instance-1", "workingCardId": "card-a"}
+                ]
+              }
+            })JSON");
+
+        ProjectSnapshotCompat broken = valid;
+        broken.physicalOrder.instances.clear();
+
+        QVERIFY_EXCEPTION_THROWN(
+            serializeProjectSnapshot(broken),
+            ProjectSnapshotError
+        );
+    }
+
     void rejectsFutureSchema()
     {
         const QByteArray json = R"JSON({

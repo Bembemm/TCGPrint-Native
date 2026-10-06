@@ -320,6 +320,79 @@ ProjectSnapshotErrorCode ProjectSnapshotError::code() const noexcept
     return code_;
 }
 
+QByteArray serializeProjectSnapshot(const ProjectSnapshotCompat& snapshot)
+{
+    std::vector<cards::WorkingCard> workingCards;
+    workingCards.reserve(snapshot.cards.size());
+
+    QJsonArray persistedCards;
+    for (const PersistedWorkingCardCompat& card : snapshot.cards) {
+        QJsonObject raw = card.raw;
+        raw.insert(QStringLiteral("id"), QString::fromStdString(card.id));
+        raw.insert(QStringLiteral("quantity"), static_cast<double>(card.quantity));
+        raw.insert(QStringLiteral("order"), card.order);
+        persistedCards.append(raw);
+
+        workingCards.push_back(cards::WorkingCard{
+            .id = card.id,
+            .quantity = card.quantity,
+            .order = card.order,
+        });
+    }
+
+    cards::PhysicalOrder canonicalOrder;
+    try {
+        canonicalOrder = cards::validatePhysicalOrder(
+            workingCards,
+            snapshot.physicalOrder
+        );
+    } catch (const cards::PhysicalOrderError& error) {
+        invalid(std::string("snapshot.physicalOrder ") + error.what());
+    }
+
+    QJsonArray instances;
+    for (const cards::PhysicalInstanceRef& instance : canonicalOrder.instances) {
+        QJsonObject reference;
+        reference.insert(
+            QStringLiteral("id"),
+            QString::fromStdString(cards::physicalInstanceIdString(instance.id))
+        );
+        reference.insert(
+            QStringLiteral("workingCardId"),
+            QString::fromStdString(instance.workingCardId)
+        );
+        instances.append(reference);
+    }
+
+    QJsonObject physicalOrder;
+    physicalOrder.insert(
+        QStringLiteral("nextInstanceId"),
+        static_cast<double>(canonicalOrder.nextInstanceId)
+    );
+    physicalOrder.insert(QStringLiteral("instances"), instances);
+
+    QJsonObject root;
+    root.insert(
+        QStringLiteral("projectSchemaVersion"),
+        CurrentProjectSchemaVersion
+    );
+    root.insert(QStringLiteral("cards"), persistedCards);
+    root.insert(QStringLiteral("settings"), snapshot.settings);
+    root.insert(QStringLiteral("physicalOrder"), physicalOrder);
+
+    const QByteArray serialized =
+        QJsonDocument(root).toJson(QJsonDocument::Compact);
+
+    if (static_cast<std::size_t>(serialized.size()) > MaxProjectSnapshotBytes) {
+        throw ProjectSnapshotError(
+            ProjectSnapshotErrorCode::ProjectSnapshotTooLarge,
+            "Project snapshot exceeds the 16 MiB limit."
+        );
+    }
+
+    return serialized;
+}
+
 ProjectSnapshotCompat deserializeProjectSnapshot(const QByteArray& json)
 {
     if (static_cast<std::size_t>(json.size()) > MaxProjectSnapshotBytes) {
