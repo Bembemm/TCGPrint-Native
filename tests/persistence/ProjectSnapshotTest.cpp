@@ -15,8 +15,14 @@ void ProjectSnapshotTest::readsV6AndPreservesDurableRawFields()
           "order": 0,
           "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
           "identityHints": {},
-          "identity": {"id": "abc"},
-          "identityResolution": {"status": "resolved", "candidates": [], "confirmed": false},
+          "identity": {
+            "id": "scryfall:oracle:abc",
+            "provider": "scryfall",
+            "name": "Card A",
+            "resolutionMethod": "manual",
+            "confidence": 1.0
+          },
+          "identityResolution": {"status": "resolved", "method": "manual", "candidates": [], "confirmed": false},
           "faces": [{"id": "front", "side": "front", "name": "Card A"}],
           "selectedArtworkByFace": {},
           "backMode": "manual",
@@ -453,6 +459,82 @@ void ProjectSnapshotTest::rejectsUnsafeArtworkCandidateId()
     );
 }
 
+void ProjectSnapshotTest::rejectsIdentityConfidenceOutsideRange()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": {
+            "id": "identity-a",
+            "provider": "scryfall",
+            "name": "Card A",
+            "resolutionMethod": "manual",
+            "confidence": 1.5
+          },
+          "identityResolution": {"status": "resolved", "method": "manual", "candidates": [], "confirmed": true},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(json)),
+        ProjectSnapshotError
+    );
+}
+
+void ProjectSnapshotTest::rejectsConfirmedResolutionWithoutIdentity()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "resolved", "method": "manual", "candidates": [], "confirmed": true},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(json)),
+        ProjectSnapshotError
+    );
+}
+
 void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
 {
     const QByteArray json = R"JSON({
@@ -469,9 +551,11 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
             "id": "oracle-a",
             "provider": "scryfall",
             "name": "Card A",
+            "resolutionMethod": "manual",
+            "confidence": 1.0,
             "metadata": {"layout": "transform"}
           },
-          "identityResolution": {"status": "resolved", "candidates": [], "confirmed": true},
+          "identityResolution": {"status": "resolved", "method": "manual", "candidates": [], "confirmed": true},
           "faces": [{"id": "front", "side": "front", "name": "Card A"}],
           "selectedArtworkByFace": {
             "front": {
