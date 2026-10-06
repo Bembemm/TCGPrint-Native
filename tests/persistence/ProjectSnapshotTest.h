@@ -20,6 +20,7 @@ private slots:
     void rejectsManualBackWithoutSource();
     void rejectsInvalidBackLibraryDigest();
     void rejectsMpcReferenceForMissingFace();
+    void rejectsUnsafeFilenameSectionAndDuplicateSlots();
     void serializesCanonicalV6WithoutLosingDurableState();
     void typedPrintSettingsDriveSerializedV6();
     void promotesLegacySnapshotToSerializedV6();
