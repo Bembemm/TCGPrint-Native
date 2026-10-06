@@ -1,12 +1,16 @@
 #include "app/Logging.h"
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[])
 {
+    QElapsedTimer startupTimer;
+    startupTimer.start();
+
     QGuiApplication app(argc, argv);
 
     QCoreApplication::setApplicationName(QStringLiteral("TCGPrint Native"));
@@ -37,6 +41,16 @@ int main(int argc, char *argv[])
     );
 
     engine.loadFromModule("TCGPrint", "App");
+
+    if (engine.rootObjects().isEmpty()) {
+        qCritical() << "TCGPrint root QML object was not created.";
+        tcgprint::logging::shutdown();
+        return EXIT_FAILURE;
+    }
+
+    qInfo().noquote()
+        << QStringLiteral("Startup QML ready in %1 ms")
+               .arg(startupTimer.elapsed());
 
     const int result = app.exec();
     tcgprint::logging::shutdown();

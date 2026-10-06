@@ -9,18 +9,58 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "ci-release",
+      "displayName": "CI Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/ci-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "windows-release",
+      "displayName": "Windows MSVC Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "wsl-debug",
       "configurePreset": "wsl-debug"
+    },
+    {
+      "name": "ci-release",
+      "configurePreset": "ci-release"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release"
     }
   ],
   "testPresets": [
     {
       "name": "wsl-debug",
       "configurePreset": "wsl-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-release",
+      "configurePreset": "ci-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release",
       "output": {
         "outputOnFailure": true
       }
