@@ -828,9 +828,6 @@ QByteArray serializeProjectSnapshot(const ProjectSnapshotCompat& snapshot)
     }
 
     QJsonArray persistedCards;
-    persistedCards.reserve(
-        static_cast<qsizetype>(workingCards.size())
-    );
 
     for (std::size_t index = 0; index < workingCards.size(); ++index) {
         const cards::WorkingCard& card = workingCards[index];
