@@ -1,0 +1,29 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "wsl-debug",
+      "displayName": "WSL Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/wsl-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "wsl-debug",
+      "configurePreset": "wsl-debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "wsl-debug",
+      "configurePreset": "wsl-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
