@@ -116,6 +116,8 @@ add_library(tcgprint_import STATIC
     src/import/SourcePath.cpp
     src/import/TextImport.h
     src/import/TextImport.cpp
+    src/import/CsvImport.h
+    src/import/CsvImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -336,6 +338,23 @@ target_link_libraries(tcgprint_import_text_tests
 add_test(
     NAME tcgprint_import_text_tests
     COMMAND tcgprint_import_text_tests
+)
+
+
+qt_add_executable(tcgprint_import_csv_tests
+    tests/import/CsvImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_csv_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_csv_tests
+    COMMAND tcgprint_import_csv_tests
 )
 
 qt_add_executable(tcgprint_benchmarks

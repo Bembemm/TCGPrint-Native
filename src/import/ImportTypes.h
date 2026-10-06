@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include <optional>
+#include <variant>
 #include <vector>
 
 namespace tcgprint::imports {
@@ -130,9 +131,29 @@ struct ImportWarning {
     std::optional<QString> field;
 };
 
+using CsvColumnSelector = std::variant<int, QString>;
+
+struct CsvImportMapping {
+    std::optional<CsvColumnSelector> name;
+    std::optional<CsvColumnSelector> quantity;
+    std::optional<CsvColumnSelector> setCode;
+    std::optional<CsvColumnSelector> collectorNumber;
+    std::optional<CsvColumnSelector> scryfallId;
+    std::optional<CsvColumnSelector> imageUrl;
+    std::optional<CsvColumnSelector> language;
+};
+
+struct ImportMapping {
+    QString sourceId;
+    QString format;
+    QJsonObject fields;
+    QStringList unknownFields;
+};
+
 struct ImporterOutput {
     std::vector<ImportedEntry> entries;
     std::vector<ImportWarning> warnings;
+    std::vector<ImportMapping> mappings;
 };
 
 QString importKindName(ImportKind kind);
