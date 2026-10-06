@@ -238,6 +238,34 @@ private slots:
         QCOMPARE(repository.list().size(), std::size_t{2});
     }
 
+    void duplicateRollsBackWhenCopyInsertFails()
+    {
+        TestDatabase storage;
+        ProjectRepository repository(storage.database);
+
+        const ProjectRecord original =
+            repository.create(sampleSnapshot(), "Original");
+
+        QSqlQuery trigger(storage.database);
+        QVERIFY(trigger.exec(QStringLiteral(
+            "CREATE TRIGGER reject_project_copy "
+            "BEFORE INSERT ON projects "
+            "WHEN NEW.name LIKE '%(cópia)' "
+            "BEGIN "
+            "SELECT RAISE(ABORT, 'copy insert blocked'); "
+            "END"
+        )));
+
+        QVERIFY_EXCEPTION_THROWN(
+            repository.duplicate(original.metadata.id),
+            ProjectRepositoryError
+        );
+
+        const auto projects = repository.list();
+        QCOMPARE(projects.size(), std::size_t{1});
+        QCOMPARE(projects[0].id, original.metadata.id);
+    }
+
     void deleteCascadesStagedRecovery()
     {
         TestDatabase storage;

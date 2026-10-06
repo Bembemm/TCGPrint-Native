@@ -424,12 +424,20 @@ ProjectRecord ProjectRepository::save(
 
 ProjectRecord ProjectRepository::duplicate(const std::string& projectId)
 {
-    const ProjectRecord original = open(projectId);
+    beginImmediate(database_);
+    try {
+        const ProjectRecord original = open(projectId);
+        ProjectRecord duplicate = create(
+            original.snapshot,
+            original.metadata.name + " (cópia)"
+        );
 
-    return create(
-        original.snapshot,
-        original.metadata.name + " (cópia)"
-    );
+        commit(database_);
+        return duplicate;
+    } catch (...) {
+        rollbackNoThrow(database_);
+        throw;
+    }
 }
 
 void ProjectRepository::remove(const std::string& projectId)
