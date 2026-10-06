@@ -28,6 +28,11 @@ void ProjectSnapshotTest::readsV6AndPreservesDurableRawFields()
           "backMode": "manual",
           "backModeSelectionPolicy": "explicit",
           "localArtworkIds": [],
+          "manualBackAsset": {
+            "assetId": "back:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "format": "png"
+          },
           "mpcReferences": [],
           "faceAssociations": []
         },
@@ -535,6 +540,123 @@ void ProjectSnapshotTest::rejectsConfirmedResolutionWithoutIdentity()
     );
 }
 
+void ProjectSnapshotTest::rejectsManualBackWithoutSource()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "manual",
+          "backModeSelectionPolicy": "explicit",
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(json)),
+        ProjectSnapshotError
+    );
+}
+
+void ProjectSnapshotTest::rejectsInvalidBackLibraryDigest()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "manual",
+          "backModeSelectionPolicy": "explicit",
+          "manualBackAsset": {
+            "assetId": "back:not-a-digest",
+            "sha256": "not-a-digest",
+            "format": "png"
+          },
+          "localArtworkIds": [],
+          "mpcReferences": [],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(json)),
+        ProjectSnapshotError
+    );
+}
+
+void ProjectSnapshotTest::rejectsMpcReferenceForMissingFace()
+{
+    const QByteArray json = R"JSON({
+      "projectSchemaVersion": 6,
+      "cards": [
+        {
+          "id": "card-a",
+          "quantity": 1,
+          "order": 0,
+          "importSource": {"sourceId": "source-a", "importKind": "text", "entryKind": "card"},
+          "identityHints": {},
+          "identity": null,
+          "identityResolution": {"status": "unresolved", "candidates": [], "confirmed": false},
+          "faces": [{"id": "front", "side": "front", "name": "Card A"}],
+          "selectedArtworkByFace": {},
+          "backMode": "project-default",
+          "backModeSelectionPolicy": "automatic",
+          "localArtworkIds": [],
+          "mpcReferences": [
+            {
+              "faceId": "back",
+              "importedAssetId": "mpc-back",
+              "slots": ["1"],
+              "availableLocally": true
+            }
+          ],
+          "faceAssociations": []
+        }
+      ],
+      "settings": {},
+      "physicalOrder": {
+        "nextInstanceId": 2,
+        "instances": [{"id": "instance-1", "workingCardId": "card-a"}]
+      }
+    })JSON";
+
+    QVERIFY_EXCEPTION_THROWN(
+        static_cast<void>(deserializeProjectSnapshot(json)),
+        ProjectSnapshotError
+    );
+}
+
 void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
 {
     const QByteArray json = R"JSON({
@@ -569,8 +691,8 @@ void ProjectSnapshotTest::serializesCanonicalV6WithoutLosingDurableState()
           "backModeSelectionPolicy": "explicit",
           "localArtworkIds": [],
           "manualBackAsset": {
-            "assetId": "back-1",
-            "sha256": "abc",
+            "assetId": "back:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
             "format": "png"
           },
           "mpcReferences": [
