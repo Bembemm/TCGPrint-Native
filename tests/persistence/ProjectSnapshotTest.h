@@ -17,6 +17,9 @@ private slots:
     void rejectsUnsafeArtworkCandidateId();
     void rejectsIdentityConfidenceOutsideRange();
     void rejectsConfirmedResolutionWithoutIdentity();
+    void rejectsManualBackWithoutSource();
+    void rejectsInvalidBackLibraryDigest();
+    void rejectsMpcReferenceForMissingFace();
     void serializesCanonicalV6WithoutLosingDurableState();
     void promotesLegacySnapshotToSerializedV6();
     void rejectsSettingsFieldsThatDidNotExistInSchema();
