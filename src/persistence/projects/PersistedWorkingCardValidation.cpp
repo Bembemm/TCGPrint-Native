@@ -79,6 +79,46 @@ void optionalString(
     static_cast<void>(requiredString(object, key, path, maximum));
 }
 
+void optionalFilename(
+    const QJsonObject& object,
+    const char* key,
+    const std::string& path,
+    int maximum
+)
+{
+    if (!object.contains(QLatin1String(key))) {
+        return;
+    }
+
+    const QString value = requiredString(
+        object,
+        key,
+        path,
+        maximum
+    );
+
+    static const QRegularExpression WindowsDrive(
+        QStringLiteral("^[A-Za-z]:")
+    );
+    static const QRegularExpression FileScheme(
+        QStringLiteral("^file:"),
+        QRegularExpression::CaseInsensitiveOption
+    );
+    static const QRegularExpression HomePath(
+        QStringLiteral("^~[\\\\/]")
+    );
+
+    if (
+        value.startsWith(QLatin1Char('/'))
+        || value.startsWith(QLatin1Char('\\'))
+        || WindowsDrive.match(value).hasMatch()
+        || FileScheme.match(value).hasMatch()
+        || HomePath.match(value).hasMatch()
+    ) {
+        invalid(path + "." + key + " must be a filename, not an absolute filesystem path.");
+    }
+}
+
 bool isSafeArtworkCandidateId(const QString& value)
 {
     static const QRegularExpression Pattern(
@@ -112,7 +152,7 @@ void validateImportSource(
     static_cast<void>(requiredString(source, "sourceId", path, 180));
     static_cast<void>(requiredString(source, "importKind", path, 60));
     static_cast<void>(requiredString(source, "entryKind", path, 60));
-    optionalString(source, "filename", path, 240);
+    optionalFilename(source, "filename", path, 240);
 
     if (source.contains(QStringLiteral("identityHintOrigin"))) {
         const QString origin =
@@ -580,6 +620,7 @@ std::set<QString> validateFaces(
                 invalid(facePath + ".slots contains too many entries.");
             }
 
+            std::set<QString> uniqueFaceSlots;
             for (qsizetype slotIndex = 0; slotIndex < faceSlots.size(); ++slotIndex) {
                 if (
                     !faceSlots.at(slotIndex).isString()
@@ -587,6 +628,10 @@ std::set<QString> validateFaces(
                     || faceSlots.at(slotIndex).toString().size() > 64
                 ) {
                     invalid(facePath + ".slots contains an invalid slot.");
+                }
+
+                if (!uniqueFaceSlots.insert(faceSlots.at(slotIndex).toString()).second) {
+                    invalid(facePath + ".slots must not contain duplicates.");
                 }
             }
         }
@@ -727,6 +772,7 @@ void validateLocalArtworkIds(
         invalid(path + " contains too many entries.");
     }
 
+    std::set<QString> uniqueIds;
     for (qsizetype index = 0; index < ids.size(); ++index) {
         if (!ids.at(index).isString()) {
             invalid(path + " contains a non-string artwork ID.");
@@ -738,6 +784,10 @@ void validateLocalArtworkIds(
             || !id.startsWith(QStringLiteral("upload:"))
         ) {
             invalid(path + " contains an invalid local upload artwork ID.");
+        }
+
+        if (!uniqueIds.insert(id).second) {
+            invalid(path + " must not contain duplicates.");
         }
     }
 }
@@ -906,6 +956,8 @@ void validateMpcReferences(
         if (referenceSlots.size() > 100) {
             invalid(referencePath + ".slots contains too many entries.");
         }
+
+        std::set<QString> uniqueReferenceSlots;
         for (qsizetype slotIndex = 0;
              slotIndex < referenceSlots.size();
              ++slotIndex) {
@@ -915,6 +967,10 @@ void validateMpcReferences(
                 || referenceSlots.at(slotIndex).toString().size() > 64
             ) {
                 invalid(referencePath + ".slots contains an invalid slot.");
+            }
+
+            if (!uniqueReferenceSlots.insert(referenceSlots.at(slotIndex).toString()).second) {
+                invalid(referencePath + ".slots must not contain duplicates.");
             }
         }
 
@@ -1003,7 +1059,7 @@ void validateSharedMpcCardback(
             180
         )
     );
-    optionalString(
+    optionalFilename(
         provenance,
         "sourceFilename",
         path + ".provenance",
@@ -1208,6 +1264,8 @@ void validatePersistedWorkingCardReferences(
 )
 {
     static_cast<void>(schemaVersion);
+
+    optionalString(source, "section", path, 80);
 
     validateImportSource(
         source.value(QStringLiteral("importSource")).toObject(),
