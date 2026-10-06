@@ -83,6 +83,8 @@ target_compile_features(tcgprint_projects PUBLIC cxx_std_23)
 add_library(tcgprint_application STATIC
     src/application/ProjectSession.h
     src/application/ProjectSession.cpp
+    src/application/ProjectAutosaveController.h
+    src/application/ProjectAutosaveController.cpp
 )
 
 target_include_directories(tcgprint_application
@@ -350,4 +352,22 @@ target_link_libraries(tcgprint_project_session_tests
 add_test(
     NAME tcgprint_project_session_tests
     COMMAND tcgprint_project_session_tests
+)
+
+qt_add_executable(tcgprint_project_autosave_tests
+    tests/application/ProjectAutosaveControllerTest.cpp
+)
+
+target_link_libraries(tcgprint_project_autosave_tests
+    PRIVATE
+        tcgprint_application
+        tcgprint_projects
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_project_autosave_tests
+    COMMAND tcgprint_project_autosave_tests
 )
