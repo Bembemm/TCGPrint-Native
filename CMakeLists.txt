@@ -104,6 +104,29 @@ target_link_libraries(tcgprint_application
 
 target_compile_features(tcgprint_application PUBLIC cxx_std_23)
 
+
+add_library(tcgprint_import STATIC
+    src/import/ImportTypes.h
+    src/import/ImportDetection.h
+    src/import/ImportDetection.cpp
+    src/import/ImportLimits.h
+    src/import/ImportLimits.cpp
+    src/import/SourcePath.h
+    src/import/SourcePath.cpp
+)
+
+target_include_directories(tcgprint_import
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(tcgprint_import
+    PUBLIC
+        Qt6::Core
+)
+
+target_compile_features(tcgprint_import PUBLIC cxx_std_23)
+
 add_library(tcgprint_runtime STATIC
     src/runtime/BackgroundJob.h
     src/runtime/BackgroundJob.cpp
@@ -260,6 +283,39 @@ target_link_libraries(tcgprint_background_job_tests
 add_test(
     NAME tcgprint_background_job_tests
     COMMAND tcgprint_background_job_tests
+)
+
+
+qt_add_executable(tcgprint_import_detection_tests
+    tests/import/ImportDetectionTest.cpp
+)
+
+target_link_libraries(tcgprint_import_detection_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_detection_tests
+    COMMAND tcgprint_import_detection_tests
+)
+
+qt_add_executable(tcgprint_import_boundary_tests
+    tests/import/ImportBoundaryTest.cpp
+)
+
+target_link_libraries(tcgprint_import_boundary_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_boundary_tests
+    COMMAND tcgprint_import_boundary_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
