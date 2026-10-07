@@ -24,8 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Ninja
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libicu-dev
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -74,9 +74,9 @@ jobs:
           arch: win64_msvc2022_64
           cache: true
 
-      - name: Install ZLIB
+      - name: Install ZLIB and ICU
         shell: pwsh
-        run: vcpkg install zlib:x64-windows-static-md
+        run: vcpkg install zlib:x64-windows-static-md icu:x64-windows-static-md
 
       - name: Configure
         shell: pwsh

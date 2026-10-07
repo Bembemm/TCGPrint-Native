@@ -25,6 +25,7 @@ find_package(
 )
 
 find_package(ZLIB REQUIRED)
+find_package(ICU REQUIRED COMPONENTS i18n uc data)
 
 if(QT_KNOWN_POLICY_QTP0001)
     qt_policy(SET QTP0001 NEW)
@@ -57,6 +58,9 @@ target_include_directories(tcgprint_domain
 target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 
 add_library(tcgprint_identity STATIC
+    src/identity/IdentityResolutionPolicy.h
+    src/identity/FuzzyMatcher.h
+    src/identity/FuzzyMatcher.cpp
     src/identity/IdentityResolver.h
     src/identity/IdentityResolver.cpp
     src/identity/ScryfallIdentityLookup.h
@@ -75,6 +79,10 @@ target_link_libraries(tcgprint_identity
     PUBLIC
         tcgprint_domain
         Qt6::Core
+    PRIVATE
+        ICU::i18n
+        ICU::uc
+        ICU::data
 )
 
 target_compile_features(tcgprint_identity PUBLIC cxx_std_23)
@@ -333,6 +341,22 @@ target_link_libraries(tcgprint_working_set_tests
 add_test(
     NAME tcgprint_working_set_tests
     COMMAND tcgprint_working_set_tests
+)
+
+qt_add_executable(tcgprint_fuzzy_matcher_tests
+    tests/identity/FuzzyMatcherTest.cpp
+)
+
+target_link_libraries(tcgprint_fuzzy_matcher_tests
+    PRIVATE
+        tcgprint_identity
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_fuzzy_matcher_tests
+    COMMAND tcgprint_fuzzy_matcher_tests
 )
 
 qt_add_executable(tcgprint_identity_resolver_tests
