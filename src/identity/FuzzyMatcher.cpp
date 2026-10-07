@@ -2,7 +2,6 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QLocale>
 #include <QRegularExpression>
 
 #include <algorithm>
@@ -13,17 +12,44 @@
 #include <utility>
 
 #include <unicode/ucol.h>
+#include <unicode/ustring.h>
 
 namespace tcgprint::identity {
 namespace {
 
-QString normalize(const QString& value, const QLocale& english)
+QString englishLowercase(const QString& value)
+{
+    if (value.isEmpty()) return {};
+    if (value.size() > std::numeric_limits<int32_t>::max()) {
+        throw std::length_error("Name normalization exceeds ICU string length limit");
+    }
+    const auto* source = reinterpret_cast<const UChar*>(value.utf16());
+    const auto sourceLength = static_cast<int32_t>(value.size());
+    UErrorCode status = U_ZERO_ERROR;
+    const auto required = u_strToLower(nullptr, 0, source, sourceLength, "en_US", &status);
+    if (U_FAILURE(status) && status != U_BUFFER_OVERFLOW_ERROR) {
+        throw std::runtime_error("Unable to size English Unicode lowercase result");
+    }
+    QString lowered;
+    lowered.resize(required);
+    status = U_ZERO_ERROR;
+    u_strToLower(reinterpret_cast<UChar*>(lowered.data()), required,
+                 source, sourceLength, "en_US", &status);
+    if (U_FAILURE(status)) {
+        throw std::runtime_error("Unable to lowercase English Unicode name");
+    }
+    return lowered;
+}
+
+QString normalize(const QString& value)
 {
     auto normalized = value.normalized(QString::NormalizationForm_KD);
     // Diacritic is the oracle's binary Unicode property, not all combining
     // marks: spacing diacritics disappear; other marks become separators.
     normalized.remove(QRegularExpression(QStringLiteral("\\p{Diacritic}")));
-    normalized = english.toLower(normalized);
+    // QLocale uses NLS on Windows, which lacks contextual final-sigma casing.
+    // ICU preserves the oracle's en-US Unicode casing on every platform.
+    normalized = englishLowercase(normalized);
     normalized.replace(QRegularExpression(QStringLiteral("[^\\p{L}\\p{N}]+")),
                        QStringLiteral(" "));
     return normalized.simplified();
@@ -107,8 +133,7 @@ FuzzyMatch fuzzyMatchName(
     const IdentityResolutionPolicy& policy
 )
 {
-    const QLocale english(QLocale::English, QLocale::UnitedStates);
-    const auto normalizedQuery = normalize(query, english);
+    const auto normalizedQuery = normalize(query);
     if (static_cast<std::size_t>(normalizedQuery.size()) < policy.minimumQueryLength
         || candidates.empty()) {
         return {};
@@ -118,7 +143,7 @@ FuzzyMatch fuzzyMatchName(
     std::vector<RankedEntry> ranked;
     ranked.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-        const auto normalizedName = normalize(candidate.name, english);
+        const auto normalizedName = normalize(candidate.name);
         // QString::size mirrors JS string.length (UTF-16 units), whereas
         // toUcs4 mirrors Array.from(string) used by the oracle's edit distance.
         const auto denominator = std::max({normalizedQuery.size(), normalizedName.size(), qsizetype{1}});

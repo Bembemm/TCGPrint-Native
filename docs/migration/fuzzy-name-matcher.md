@@ -14,7 +14,7 @@ margin `0.04`, minimum normalized query length `2`, and maximum close candidates
 `5`. Callers can customize a copy.
 
 Normalization uses Qt NFKD, removes the Unicode `Diacritic` binary property via
-`QRegularExpression`, applies explicit English/US lowercase via `QLocale`, and
+`QRegularExpression`, applies explicit English/US lowercase via ICU `u_strToLower`, and
 replaces runs outside Unicode letter/number categories with spaces, then trims
 and collapses spaces. Removing all combining marks instead would change the
 oracle: non-diacritic marks become separators, while spacing diacritics may be
@@ -30,7 +30,9 @@ then of the ID (or compact serialized `{name}` when absent). Numeric sorting is
 off, punctuation participates, and case/accent differences participate. ICU is
 an explicit build dependency because Qt's Windows `QCollator` uses NLS word
 sorting: `coop` precedes `co-op`, reversing the oracle's English ordering. ICU
-avoids that platform-specific behavior. Linux needs the ICU development package
+avoids that platform-specific behavior. ICU also implements contextual lowercase
+(e.g. Greek final sigma `ΟΣ → ος`), which Qt's Windows NLS casing does not
+preserve. Linux needs the ICU development package
 (e.g. `libicu-dev`); Windows CI installs `icu:x64-windows-static-md` through vcpkg.
 CMake links ICU i18n, uc and data, including static-library builds.
 
