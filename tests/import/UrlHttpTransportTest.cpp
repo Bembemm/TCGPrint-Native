@@ -360,6 +360,108 @@ private slots:
         }
         QCOMPARE(resolverCalls, 0);
     }
+
+    void forwardsRequestHeadersAndPreservesHttpStatus()
+    {
+        QUrl seenUrl;
+        UrlRequestHeaders seenHeaders;
+        UrlFetchOptions options;
+        options.resolveHost =
+            [](const QString&) {
+                return QStringList{
+                    QStringLiteral("93.184.216.34")
+                };
+            };
+        options.requestHeaders = {
+            {
+                QStringLiteral("accept"),
+                QStringLiteral("application/json")
+            },
+            {
+                QStringLiteral("user-agent"),
+                QStringLiteral("TCGPrint/test")
+            },
+        };
+        options.requestExecutorWithHeaders =
+            [&seenUrl, &seenHeaders](
+                const QUrl& url,
+                const QString&,
+                const UrlRequestHeaders& headers,
+                std::uint64_t,
+                std::uint64_t
+            ) {
+                seenUrl = url;
+                seenHeaders = headers;
+                return UrlHttpResponse{
+                    .status = 404,
+                    .headers = {
+                        {
+                            QStringLiteral("content-type"),
+                            QStringLiteral("application/json")
+                        },
+                    },
+                    .body = QByteArrayLiteral("must not escape"),
+                };
+            };
+
+        const UrlFetchResponse response = fetchUrlResponse(
+            QStringLiteral("https://api.scryfall.com/cards/missing"),
+            options
+        );
+
+        QCOMPARE(
+            seenUrl.host(),
+            QStringLiteral("api.scryfall.com")
+        );
+        QCOMPARE(
+            seenHeaders.value(QStringLiteral("accept")),
+            QStringLiteral("application/json")
+        );
+        QCOMPARE(
+            seenHeaders.value(QStringLiteral("user-agent")),
+            QStringLiteral("TCGPrint/test")
+        );
+        QCOMPARE(response.status, 404);
+        QVERIFY(response.bytes.isEmpty());
+    }
+
+    void rejectsUnsupportedOrInjectedRequestHeaders()
+    {
+        int calls = 0;
+        UrlFetchOptions options;
+        options.requestHeaders.insert(
+            QStringLiteral("user-agent"),
+            QStringLiteral("TCGPrint/test\r\nHost: evil.invalid")
+        );
+        options.requestExecutorWithHeaders =
+            [&calls](
+                const QUrl&,
+                const QString&,
+                const UrlRequestHeaders&,
+                std::uint64_t,
+                std::uint64_t
+            ) {
+                ++calls;
+                return UrlHttpResponse{.status = 200};
+            };
+        options.resolveHost =
+            [](const QString&) {
+                return QStringList{
+                    QStringLiteral("93.184.216.34")
+                };
+            };
+
+        try {
+            static_cast<void>(fetchUrlResponse(
+                QStringLiteral("https://files.example.invalid/data"),
+                options
+            ));
+            QFAIL("Expected URL_INVALID.");
+        } catch (const ImportFailureError& error) {
+            QCOMPARE(error.code(), QStringLiteral("URL_INVALID"));
+        }
+        QCOMPARE(calls, 0);
+    }
 };
 
 QTEST_APPLESS_MAIN(UrlHttpTransportTest)

@@ -712,6 +712,51 @@ QString responseMediaType(
         .toLower();
 }
 
+UrlRequestHeaders validatedRequestHeaders(
+    const UrlRequestHeaders& headers
+)
+{
+    UrlRequestHeaders validated;
+    for (auto iterator = headers.cbegin(); iterator != headers.cend(); ++iterator) {
+        const QString name = iterator.key().toLower();
+        if (
+            name != QStringLiteral("accept")
+            && name != QStringLiteral("user-agent")
+        ) {
+            throw ImportFailureError(
+                QStringLiteral(
+                    "Only Accept and User-Agent request headers are supported."
+                ),
+                QStringLiteral("URL_INVALID")
+            );
+        }
+        if (validated.contains(name)) {
+            throw ImportFailureError(
+                QStringLiteral("A request header was supplied more than once."),
+                QStringLiteral("URL_INVALID")
+            );
+        }
+
+        const QString value = iterator.value();
+        if (value.isEmpty()) {
+            throw ImportFailureError(
+                QStringLiteral("A request header value is empty."),
+                QStringLiteral("URL_INVALID")
+            );
+        }
+        for (const QChar character : value) {
+            if (character.unicode() < 0x20 || character.unicode() > 0x7e) {
+                throw ImportFailureError(
+                    QStringLiteral("A request header value is invalid."),
+                    QStringLiteral("URL_INVALID")
+                );
+            }
+        }
+        validated.insert(name, value);
+    }
+    return validated;
+}
+
 } // namespace
 
 namespace detail {
@@ -720,7 +765,8 @@ UrlHttpResponse executePinnedHttpGet(
     const QUrl& logicalUrl,
     const QString& pinnedAddress,
     std::uint64_t timeoutMs,
-    std::uint64_t maxResponseBytes
+    std::uint64_t maxResponseBytes,
+    const UrlRequestHeaders& requestHeaders
 )
 {
     QElapsedTimer timer;
@@ -794,9 +840,21 @@ UrlHttpResponse executePinnedHttpGet(
     request += requestTarget(logicalUrl);
     request += QByteArrayLiteral(" HTTP/1.1\r\nHost: ");
     request += requestHostHeader(logicalUrl).toLatin1();
+    request += QByteArrayLiteral("\r\nAccept: ");
+    request += requestHeaders.value(
+        QStringLiteral("accept"),
+        QStringLiteral(
+            "text/html, application/xhtml+xml, image/*, text/plain, text/csv, text/tab-separated-values, application/json, application/xml, text/xml, application/zip, application/octet-stream;q=0.9"
+        )
+    ).toLatin1();
+    request += QByteArrayLiteral("\r\nUser-Agent: ");
+    request += requestHeaders.value(
+        QStringLiteral("user-agent"),
+        QStringLiteral(
+            "TCGPrint/0.1.0 (+https://github.com/Bembemm/TCGPrint)"
+        )
+    ).toLatin1();
     request += QByteArrayLiteral(
-        "\r\nAccept: text/html, application/xhtml+xml, image/*, text/plain, text/csv, text/tab-separated-values, application/json, application/xml, text/xml, application/zip, application/octet-stream;q=0.9"
-        "\r\nUser-Agent: TCGPrint/0.1.0 (+https://github.com/Bembemm/TCGPrint)"
         "\r\nAccept-Encoding: identity"
         "\r\nConnection: close\r\n\r\n"
     );
@@ -939,8 +997,22 @@ UrlPayload fetchUrlPayload(
     const UrlFetchOptions& options
 )
 {
-    const QUrl url(value.trimmed(), QUrl::StrictMode);
-    return fetchUrlPayload(url, options);
+    const UrlFetchResponse response =
+        fetchUrlResponse(value, options);
+    if (response.status < 200 || response.status >= 300) {
+        throw ImportFailureError(
+            QStringLiteral("Remote server returned HTTP %1.")
+                .arg(response.status),
+            QStringLiteral("URL_HTTP_ERROR")
+        );
+    }
+
+    return UrlPayload{
+        .bytes = response.bytes,
+        .mediaType = response.mediaType,
+        .finalUrl = response.finalUrl,
+        .headers = response.headers,
+    };
 }
 
 UrlPayload fetchUrlPayload(
@@ -948,8 +1020,41 @@ UrlPayload fetchUrlPayload(
     const UrlFetchOptions& options
 )
 {
+    const UrlFetchResponse response = fetchUrlResponse(value, options);
+    if (response.status < 200 || response.status >= 300) {
+        throw ImportFailureError(
+            QStringLiteral("Remote server returned HTTP %1.")
+                .arg(response.status),
+            QStringLiteral("URL_HTTP_ERROR")
+        );
+    }
+
+    return UrlPayload{
+        .bytes = response.bytes,
+        .mediaType = response.mediaType,
+        .finalUrl = response.finalUrl,
+        .headers = response.headers,
+    };
+}
+
+UrlFetchResponse fetchUrlResponse(
+    const QString& value,
+    const UrlFetchOptions& options
+)
+{
+    const QUrl url(value.trimmed(), QUrl::StrictMode);
+    return fetchUrlResponse(url, options);
+}
+
+UrlFetchResponse fetchUrlResponse(
+    const QUrl& value,
+    const UrlFetchOptions& options
+)
+{
     validateUrlTransportPolicy(options.policy);
     validateInitialFetchUrl(value);
+    const UrlRequestHeaders requestHeaders =
+        validatedRequestHeaders(options.requestHeaders);
 
     QElapsedTimer totalTimer;
     totalTimer.start();
@@ -979,7 +1084,15 @@ UrlPayload fetchUrlPayload(
 
         UrlHttpResponse response;
         try {
-            response = options.requestExecutor
+            response = options.requestExecutorWithHeaders
+                ? options.requestExecutorWithHeaders(
+                    current,
+                    pinnedAddress,
+                    requestHeaders,
+                    remaining,
+                    options.policy.maxResponseBytes
+                )
+                : options.requestExecutor
                 ? options.requestExecutor(
                     current,
                     pinnedAddress,
@@ -990,7 +1103,8 @@ UrlPayload fetchUrlPayload(
                     current,
                     pinnedAddress,
                     remaining,
-                    options.policy.maxResponseBytes
+                    options.policy.maxResponseBytes,
+                    requestHeaders
                 );
         } catch (const ImportFailureError&) {
             throw;
@@ -1038,16 +1152,14 @@ UrlPayload fetchUrlPayload(
             continue;
         }
 
-        if (
-            response.status < 200
-            || response.status >= 300
-        ) {
-            throw ImportFailureError(
-                QStringLiteral(
-                    "Remote server returned HTTP %1."
-                ).arg(response.status),
-                QStringLiteral("URL_HTTP_ERROR")
-            );
+        if (response.status < 200 || response.status >= 300) {
+            return UrlFetchResponse{
+                .status = response.status,
+                .bytes = {},
+                .mediaType = responseMediaType(response.headers),
+                .finalUrl = current,
+                .headers = std::move(response.headers),
+            };
         }
 
         validateUrlResponseSize(
@@ -1058,7 +1170,8 @@ UrlPayload fetchUrlPayload(
             options.policy.maxResponseBytes
         );
 
-        return UrlPayload{
+        return UrlFetchResponse{
+            .status = response.status,
             .bytes = std::move(response.body),
             .mediaType =
                 responseMediaType(response.headers),

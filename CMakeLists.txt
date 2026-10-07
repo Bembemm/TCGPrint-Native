@@ -59,6 +59,8 @@ target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 add_library(tcgprint_identity STATIC
     src/identity/ScryfallIdentity.h
     src/identity/ScryfallIdentity.cpp
+    src/identity/ScryfallIdentityClient.h
+    src/identity/ScryfallIdentityClient.cpp
 )
 
 target_include_directories(tcgprint_identity
@@ -182,6 +184,11 @@ target_link_libraries(tcgprint_import
 )
 
 target_compile_features(tcgprint_import PUBLIC cxx_std_23)
+
+target_link_libraries(tcgprint_identity
+    PUBLIC
+        tcgprint_import
+)
 
 add_library(tcgprint_runtime STATIC
     src/runtime/BackgroundJob.h
@@ -339,6 +346,22 @@ target_link_libraries(tcgprint_scryfall_identity_tests
 add_test(
     NAME tcgprint_scryfall_identity_tests
     COMMAND tcgprint_scryfall_identity_tests
+)
+
+qt_add_executable(tcgprint_scryfall_identity_client_tests
+    tests/identity/ScryfallIdentityClientTest.cpp
+)
+
+target_link_libraries(tcgprint_scryfall_identity_client_tests
+    PRIVATE
+        tcgprint_identity
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_scryfall_identity_client_tests
+    COMMAND tcgprint_scryfall_identity_client_tests
 )
 
 qt_add_executable(tcgprint_background_job_tests
