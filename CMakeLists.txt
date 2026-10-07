@@ -122,6 +122,8 @@ add_library(tcgprint_import STATIC
     src/import/JsonImport.cpp
     src/import/XmlImport.h
     src/import/XmlImport.cpp
+    src/import/ImageImport.h
+    src/import/ImageImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -132,6 +134,7 @@ target_include_directories(tcgprint_import
 target_link_libraries(tcgprint_import
     PUBLIC
         Qt6::Core
+        Qt6::Gui
 )
 
 target_compile_features(tcgprint_import PUBLIC cxx_std_23)
@@ -393,6 +396,24 @@ target_link_libraries(tcgprint_import_xml_tests
 add_test(
     NAME tcgprint_import_xml_tests
     COMMAND tcgprint_import_xml_tests
+)
+
+
+qt_add_executable(tcgprint_import_image_tests
+    tests/import/ImageImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_image_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_image_tests
+    COMMAND tcgprint_import_image_tests
 )
 
 qt_add_executable(tcgprint_benchmarks

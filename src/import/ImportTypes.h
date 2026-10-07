@@ -107,8 +107,8 @@ struct ImportedAsset {
     QString originalFormat;
     std::optional<QString> mediaType;
     std::optional<QString> sha256;
-    std::optional<std::uint64_t> widthPx;
-    std::optional<std::uint64_t> heightPx;
+    std::optional<double> widthPx;
+    std::optional<double> heightPx;
     std::optional<QByteArray> originalBytes;
     std::optional<QString> providerAssetId;
     std::optional<QString> selectedArtworkId;
