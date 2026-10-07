@@ -1,7 +1,10 @@
 #include <QtTest>
+#include <QJsonDocument>
 
 #include "import/DirectFileUrlImport.h"
 #include "import/ImportFailure.h"
+
+#include <algorithm>
 
 using namespace tcgprint::imports;
 

@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <stdexcept>
 
 namespace tcgprint::imports {
 namespace {
@@ -182,7 +183,7 @@ QString dispositionFilename(const QString& header)
 
     const QRegularExpression regular(
         QStringLiteral(
-            R"(filename\s*=\s*(?:"([^"]*)"|([^;\s]*)))"
+            R"REGEX(filename\s*=\s*(?:"([^"]*)"|([^;\s]*)))REGEX"
         ),
         QRegularExpression::CaseInsensitiveOption
     );
