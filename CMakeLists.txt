@@ -133,6 +133,8 @@ add_library(tcgprint_import STATIC
     src/import/UrlRegistry.cpp
     src/import/UrlTransportPolicy.h
     src/import/UrlTransportPolicy.cpp
+    src/import/UrlHttpTransport.h
+    src/import/UrlHttpTransport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -477,6 +479,23 @@ target_link_libraries(tcgprint_import_url_transport_policy_tests
 add_test(
     NAME tcgprint_import_url_transport_policy_tests
     COMMAND tcgprint_import_url_transport_policy_tests
+)
+
+qt_add_executable(tcgprint_import_url_http_transport_tests
+    tests/import/UrlHttpTransportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_url_http_transport_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Network
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_url_http_transport_tests
+    COMMAND tcgprint_import_url_http_transport_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
