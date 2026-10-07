@@ -128,6 +128,8 @@ add_library(tcgprint_import STATIC
     src/import/ImageImport.cpp
     src/import/ZipImport.h
     src/import/ZipImport.cpp
+    src/import/UrlRegistry.h
+    src/import/UrlRegistry.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -438,6 +440,22 @@ target_link_libraries(tcgprint_import_zip_tests
 add_test(
     NAME tcgprint_import_zip_tests
     COMMAND tcgprint_import_zip_tests
+)
+
+qt_add_executable(tcgprint_import_url_registry_tests
+    tests/import/UrlRegistryTest.cpp
+)
+
+target_link_libraries(tcgprint_import_url_registry_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_url_registry_tests
+    COMMAND tcgprint_import_url_registry_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
