@@ -16,6 +16,7 @@ find_package(
         Core
         Concurrent
         Gui
+        Network
         Qml
         Quick
         QuickControls2
@@ -130,6 +131,8 @@ add_library(tcgprint_import STATIC
     src/import/ZipImport.cpp
     src/import/UrlRegistry.h
     src/import/UrlRegistry.cpp
+    src/import/UrlTransportPolicy.h
+    src/import/UrlTransportPolicy.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -141,6 +144,7 @@ target_link_libraries(tcgprint_import
     PUBLIC
         Qt6::Core
         Qt6::Gui
+        Qt6::Network
     PRIVATE
         ZLIB::ZLIB
 )
@@ -456,6 +460,23 @@ target_link_libraries(tcgprint_import_url_registry_tests
 add_test(
     NAME tcgprint_import_url_registry_tests
     COMMAND tcgprint_import_url_registry_tests
+)
+
+qt_add_executable(tcgprint_import_url_transport_policy_tests
+    tests/import/UrlTransportPolicyTest.cpp
+)
+
+target_link_libraries(tcgprint_import_url_transport_policy_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Network
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_url_transport_policy_tests
+    COMMAND tcgprint_import_url_transport_policy_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
