@@ -138,17 +138,15 @@ private slots:
             );
         }
 
-        QVERIFY_NO_THROW(
-            validateResolvedUrlHost(
-                QUrl(
-                    QStringLiteral(
-                        "https://files.example.invalid/deck.txt"
-                    )
-                ),
-                QStringList{
-                    QStringLiteral("93.184.216.34")
-                }
-            )
+        validateResolvedUrlHost(
+            QUrl(
+                QStringLiteral(
+                    "https://files.example.invalid/deck.txt"
+                )
+            ),
+            QStringList{
+                QStringLiteral("93.184.216.34")
+            }
         );
     }
 
@@ -183,12 +181,10 @@ private slots:
 
     void validatesRedirectTargetsAndAddresses()
     {
-        QVERIFY_NO_THROW(
-            validateUrlRedirectTarget(
-                QUrl(
-                    QStringLiteral(
-                        "https://files.example.com/deck.txt"
-                    )
+        validateUrlRedirectTarget(
+            QUrl(
+                QStringLiteral(
+                    "https://files.example.com/deck.txt"
                 )
             )
         );
@@ -231,20 +227,16 @@ private slots:
 
     void enforcesRedirectAndResponseBounds()
     {
-        QVERIFY_NO_THROW(
-            validateUrlRedirectCount(4, 5)
-        );
+        validateUrlRedirectCount(4, 5);
         QVERIFY_EXCEPTION_THROWN(
             validateUrlRedirectCount(5, 5),
             ImportFailureError
         );
 
-        QVERIFY_NO_THROW(
-            validateUrlResponseSize(
-                100,
-                100,
-                100
-            )
+        validateUrlResponseSize(
+            100,
+            100,
+            100
         );
 
         try {
