@@ -179,7 +179,12 @@ QString sanitizeUrlForReport(const QString& value)
     query.setQueryItems(items);
     url.setQuery(query);
 
-    return url.toString(QUrl::FullyEncoded);
+    QString sanitized = url.toString(QUrl::FullyEncoded);
+    sanitized.replace(
+        QStringLiteral("[redacted]"),
+        QStringLiteral("%5Bredacted%5D")
+    );
+    return sanitized;
 }
 
 bool isPublicUrlAddress(const QString& address)
