@@ -57,6 +57,9 @@ target_include_directories(tcgprint_domain
 target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 
 add_library(tcgprint_identity STATIC
+    src/identity/IdentityResolver.h
+    src/identity/IdentityResolver.cpp
+    src/identity/ScryfallIdentityLookup.h
     src/identity/ScryfallIdentity.h
     src/identity/ScryfallIdentity.cpp
     src/identity/ScryfallIdentityClient.h
@@ -330,6 +333,22 @@ target_link_libraries(tcgprint_working_set_tests
 add_test(
     NAME tcgprint_working_set_tests
     COMMAND tcgprint_working_set_tests
+)
+
+qt_add_executable(tcgprint_identity_resolver_tests
+    tests/identity/IdentityResolverTest.cpp
+)
+
+target_link_libraries(tcgprint_identity_resolver_tests
+    PRIVATE
+        tcgprint_identity
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_identity_resolver_tests
+    COMMAND tcgprint_identity_resolver_tests
 )
 
 qt_add_executable(tcgprint_scryfall_identity_tests

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "identity/ScryfallIdentity.h"
+#include "identity/ScryfallIdentityLookup.h"
 #include "import/UrlHttpTransport.h"
 
 #include <QString>
@@ -41,7 +41,7 @@ private:
     std::optional<int> status_;
 };
 
-class ScryfallIdentityClient final
+class ScryfallIdentityClient final : public ScryfallIdentityLookup
 {
 public:
     explicit ScryfallIdentityClient(
@@ -50,17 +50,17 @@ public:
 
     [[nodiscard]] ScryfallIdentityCard lookupById(
         const QString& scryfallId
-    ) const;
+    ) const override;
 
     [[nodiscard]] ScryfallIdentityCard lookupBySetCollector(
         const QString& setCode,
         const QString& collectorNumber,
         const std::optional<QString>& language = std::nullopt
-    ) const;
+    ) const override;
 
     [[nodiscard]] ScryfallIdentityCard lookupByExactName(
         const QString& name
-    ) const;
+    ) const override;
 
 private:
     [[nodiscard]] ScryfallIdentityCard lookup(
