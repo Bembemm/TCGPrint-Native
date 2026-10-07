@@ -336,8 +336,8 @@ private slots:
                                     )
                                 },
                             },
-                            .body = QByteArrayLiteral(
-                                "\x01\x02\x03\x04"
+                            .body = QByteArray::fromHex(
+                                "fffefd"
                             ),
                         }
                     )
