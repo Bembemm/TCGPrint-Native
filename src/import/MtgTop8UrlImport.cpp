@@ -9,6 +9,7 @@
 #include <QElapsedTimer>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStringDecoder>
 #include <QUrl>
 #include <QUrlQuery>
@@ -96,7 +97,7 @@ QString mediaCharset(const UrlPayload& payload)
         );
     const QRegularExpression charsetPattern(
         QStringLiteral(
-            R"(charset\s*=\s*(?:"([^"]+)"|'([^']+)'|([^;\s]+)))"
+            R"REGEX(charset\s*=\s*(?:"([^"]+)"|'([^']+)'|([^;\s]+)))REGEX"
         ),
         QRegularExpression::CaseInsensitiveOption
     );
@@ -165,7 +166,7 @@ QString decodeHtmlAttribute(QString value)
             QStringLiteral(R"(&quot;)"),
             QRegularExpression::CaseInsensitiveOption
         ),
-        QStringLiteral(""")
+        QStringLiteral("\"")
     );
     value.replace(
         QRegularExpression(
