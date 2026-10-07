@@ -91,7 +91,16 @@ jobs:
 
       - name: Test
         shell: pwsh
-        run: ctest --preset windows-release
+        run: |
+          ctest --preset windows-release
+          $nativeTestExit = $LASTEXITCODE
+          if ($nativeTestExit -ne 0) {
+            # QtTest's default Windows logger may omit console diagnostics.
+            $fuzzyLog = Join-Path $env:RUNNER_TEMP "fuzzy-matcher-failure.txt"
+            & .\build\windows-release\tcgprint_fuzzy_matcher_tests.exe -o "$fuzzyLog,txt"
+            Get-Content $fuzzyLog
+          }
+          exit $nativeTestExit
 
       - name: Core benchmark smoke
         shell: pwsh
