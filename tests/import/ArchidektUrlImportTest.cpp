@@ -7,30 +7,35 @@ using namespace tcgprint::imports;
 
 namespace {
 
-const QByteArray Fixture = R"JSON({
-  "id": 7031486,
-  "name": "Synthetic Archidekt deck",
-  "cards": [
-    {
-      "quantity": 2,
-      "categories": ["Creatures", "Mainboard"],
-      "card": {
-        "collectorNumber": "182",
-        "edition": { "editioncode": "bro" },
-        "oracleCard": { "name": "Gaea's Gift" }
-      }
-    },
-    {
-      "quantity": 1,
-      "categories": ["Sideboard"],
-      "card": {
-        "collectorNumber": "17",
-        "edition": { "editioncode": "m21" },
-        "oracleCard": { "name": "Example Card" }
-      }
-    }
-  ]
-})JSON";
+QByteArray archidektFixture()
+{
+    return QByteArrayLiteral(
+        "{"
+        "\"id\":7031486,"
+        "\"name\":\"Synthetic Archidekt deck\","
+        "\"cards\":["
+        "{"
+        "\"quantity\":2,"
+        "\"categories\":[\"Creatures\",\"Mainboard\"],"
+        "\"card\":{"
+        "\"collectorNumber\":\"182\","
+        "\"edition\":{\"editioncode\":\"bro\"},"
+        "\"oracleCard\":{\"name\":\"Gaea's Gift\"}"
+        "}"
+        "},"
+        "{"
+        "\"quantity\":1,"
+        "\"categories\":[\"Sideboard\"],"
+        "\"card\":{"
+        "\"collectorNumber\":\"17\","
+        "\"edition\":{\"editioncode\":\"m21\"},"
+        "\"oracleCard\":{\"name\":\"Example Card\"}"
+        "}"
+        "}"
+        "]"
+        "}"
+    );
+}
 
 UrlFetchOptions apiOptions(
     UrlHttpResponse response,
@@ -87,7 +92,7 @@ private slots:
                                 )
                             },
                         },
-                        .body = Fixture,
+                        .body = archidektFixture(),
                     },
                     &requestedUrl
                 )
@@ -303,7 +308,7 @@ private slots:
                         QStringLiteral("text/plain")
                     },
                 },
-                .body = Fixture,
+                .body = archidektFixture(),
             },
             UrlHttpResponse{
                 .status = 200,
