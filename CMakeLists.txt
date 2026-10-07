@@ -143,6 +143,8 @@ add_library(tcgprint_import STATIC
     src/import/ArchidektUrlImport.cpp
     src/import/CubeCobraUrlImport.h
     src/import/CubeCobraUrlImport.cpp
+    src/import/MtgTop8UrlImport.h
+    src/import/MtgTop8UrlImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -571,6 +573,23 @@ target_link_libraries(tcgprint_import_cubecobra_url_tests
 add_test(
     NAME tcgprint_import_cubecobra_url_tests
     COMMAND tcgprint_import_cubecobra_url_tests
+)
+
+qt_add_executable(tcgprint_import_mtgtop8_url_tests
+    tests/import/MtgTop8UrlImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_mtgtop8_url_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Network
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_mtgtop8_url_tests
+    COMMAND tcgprint_import_mtgtop8_url_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
