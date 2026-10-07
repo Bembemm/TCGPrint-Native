@@ -116,15 +116,13 @@ private slots:
                 )
             );
 
-        QCOMPARE(
-            requests,
-            QStringList{
-                eventUrl,
-                QStringLiteral(
-                    "https://www.mtgtop8.com/dec?d=298009&f=Limited_WB_by_captainobv"
-                ),
-            }
-        );
+        const QStringList expectedRequests{
+            eventUrl,
+            QStringLiteral(
+                "https://www.mtgtop8.com/dec?d=298009&f=Limited_WB_by_captainobv"
+            ),
+        };
+        QCOMPARE(requests, expectedRequests);
         QCOMPARE(result.source.order, 3);
         QCOMPARE(
             result.source.adapterId.value_or(QString()),
