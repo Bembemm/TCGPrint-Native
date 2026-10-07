@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include <algorithm>
+
 #include "import/ImportFailure.h"
 #include "import/XmlImport.h"
 
@@ -188,6 +190,208 @@ private slots:
             QStringLiteral("1")
         );
     }
+
+    void importsMpcFrontBackSlotsAndArtworkIds()
+    {
+        const QString xml = QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            "<order>"
+            "<details><quantity>1</quantity><bracket>standard</bracket></details>"
+            "<fronts>"
+            "<card><id>synthetic-front-art-a</id><slots>2, 1</slots><quantity>9</quantity><name>Example Front</name><query>synthetic:front-a</query></card>"
+            "<card><id>synthetic-front-art-a</id><slot>3</slot><name>Repeated Example Front</name></card>"
+            "<card><slots>4</slots><name>Optional ID Example</name></card>"
+            "</fronts>"
+            "<backs>"
+            "<card><id>synthetic-back-art-a</id><slots>1,2</slots><name>Example Back</name><query>synthetic:back-a</query></card>"
+            "<card><id>synthetic-back-art-b</id><slot>3</slot><name>Repeated Example Back</name></card>"
+            "<card><id>synthetic-back-art-c</id><slots>4</slots></card>"
+            "</backs>"
+            "<cardback>synthetic-cardback-artwork</cardback>"
+            "</order>"
+        );
+
+        ImportSource source = xmlSource(
+            QStringLiteral("order.xml"),
+            xml
+        );
+        source.order = 7;
+
+        const ImporterOutput result =
+            importMpcAutofillXml(source);
+
+        QCOMPARE(result.entries.size(), std::size_t{3});
+        QCOMPARE(
+            result.entries[0].cardHint->name.value_or(QString()),
+            QStringLiteral("Example Front")
+        );
+        QCOMPARE(
+            result.entries[1].cardHint->name.value_or(QString()),
+            QStringLiteral("Repeated Example Front")
+        );
+        QCOMPARE(
+            result.entries[2].cardHint->name.value_or(QString()),
+            QStringLiteral("Optional ID Example")
+        );
+
+        QCOMPARE(result.entries[0].quantity, 2ULL);
+        QCOMPARE(result.entries[1].quantity, 1ULL);
+        QCOMPARE(result.entries[2].quantity, 1ULL);
+
+        QCOMPARE(
+            static_cast<int>(result.entries[0].kind),
+            static_cast<int>(ImportedEntryKind::MpcOrderCard)
+        );
+        QCOMPARE(
+            result.entries[0].slots,
+            QStringList({QStringLiteral("2"), QStringLiteral("1")})
+        );
+        QVERIFY(result.entries[0].front.has_value());
+        QCOMPARE(
+            result.entries[0]
+                .front->selectedArtworkId.value_or(QString()),
+            QStringLiteral("synthetic-front-art-a")
+        );
+        QCOMPARE(
+            result.entries[0].front->name.value_or(QString()),
+            QStringLiteral("Example Front")
+        );
+        QCOMPARE(
+            result.entries[0].front->query.value_or(QString()),
+            QStringLiteral("synthetic:front-a")
+        );
+
+        QCOMPARE(result.entries[0].faces.size(), std::size_t{2});
+        QCOMPARE(
+            static_cast<int>(result.entries[0].faces[0].side),
+            static_cast<int>(ImportedFaceSide::Front)
+        );
+        QCOMPARE(
+            static_cast<int>(result.entries[0].faces[1].side),
+            static_cast<int>(ImportedFaceSide::Back)
+        );
+        QCOMPARE(
+            result.entries[0].faces[1]
+                .selectedArtworkId.value_or(QString()),
+            QStringLiteral("synthetic-back-art-a")
+        );
+
+        QCOMPARE(
+            result.entries[0].faceAssociations.size(),
+            std::size_t{2}
+        );
+        QVERIFY(
+            result.entries[0].faceAssociations[0]
+                .backAssetId.has_value()
+        );
+        QVERIFY(
+            result.entries[0].faceAssociations[1]
+                .backAssetId.has_value()
+        );
+
+        QVERIFY(result.entries[1].back.has_value());
+        QCOMPARE(
+            result.entries[1]
+                .back->selectedArtworkId.value_or(QString()),
+            QStringLiteral("synthetic-back-art-b")
+        );
+        QVERIFY(
+            !result.entries[2]
+                .front->selectedArtworkId.has_value()
+        );
+        QCOMPARE(
+            result.entries[2]
+                .metadata.value(QStringLiteral("cardback"))
+                .toString(),
+            QStringLiteral("synthetic-cardback-artwork")
+        );
+        QCOMPARE(
+            result.metadata
+                .value(QStringLiteral("cardbackAsset"))
+                .toObject()
+                .value(QStringLiteral("selectedArtworkId"))
+                .toString(),
+            QStringLiteral("synthetic-cardback-artwork")
+        );
+
+        QVERIFY(
+            std::any_of(
+                result.warnings.begin(),
+                result.warnings.end(),
+                [](const ImportWarning& warning) {
+                    return warning.code
+                        == QStringLiteral(
+                            "MPC_QUANTITY_DIFFERS_FROM_SLOTS"
+                        );
+                }
+            )
+        );
+    }
+
+    void retainsMpcDetailsAndCardbackWithoutCards()
+    {
+        const ImporterOutput result =
+            importMpcAutofillXml(
+                xmlSource(
+                    QStringLiteral("empty-order.xml"),
+                    QStringLiteral(
+                        "<order>"
+                        "<details><quantity>1</quantity></details>"
+                        "<cardback>synthetic-back</cardback>"
+                        "</order>"
+                    )
+                )
+            );
+
+        QCOMPARE(result.entries.size(), std::size_t{1});
+        QCOMPARE(
+            static_cast<int>(result.entries[0].kind),
+            static_cast<int>(ImportedEntryKind::Document)
+        );
+        QCOMPARE(
+            result.entries[0]
+                .metadata.value(QStringLiteral("cardback"))
+                .toString(),
+            QStringLiteral("synthetic-back")
+        );
+        QCOMPARE(
+            result.metadata
+                .value(QStringLiteral("cardbackAsset"))
+                .toObject()
+                .value(QStringLiteral("selectedArtworkId"))
+                .toString(),
+            QStringLiteral("synthetic-back")
+        );
+    }
+
+    void rejectsMalformedAndWrongRootMpcXml()
+    {
+        for (
+            const QString& xml :
+            {
+                QStringLiteral("<order><fronts>"),
+                QStringLiteral("<deck><card /></deck>")
+            }
+        ) {
+            try {
+                static_cast<void>(
+                    importMpcAutofillXml(
+                        xmlSource(
+                            QStringLiteral("bad-order.xml"),
+                            xml
+                        )
+                    )
+                );
+                QFAIL("Expected MPC XML failure.");
+            } catch (const ImportFailureError& error) {
+                QVERIFY(
+                    error.code() == QStringLiteral("INVALID_XML")
+                    || error.code() == QStringLiteral("FORMAT_MISMATCH")
+                );
+            }
+        }
+    }
+
 };
 
 QTEST_APPLESS_MAIN(XmlImportTest)

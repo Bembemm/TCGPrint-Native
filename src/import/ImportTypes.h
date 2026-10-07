@@ -99,6 +99,44 @@ struct ImportedCardHint {
     std::optional<QString> section;
 };
 
+struct ImportedAsset {
+    QString id;
+    QString sourceId;
+    std::optional<QString> sourceFilename;
+    std::optional<QString> sourcePath;
+    QString originalFormat;
+    std::optional<QString> mediaType;
+    std::optional<QString> sha256;
+    std::optional<std::uint64_t> widthPx;
+    std::optional<std::uint64_t> heightPx;
+    std::optional<QByteArray> originalBytes;
+    std::optional<QString> providerAssetId;
+    std::optional<QString> selectedArtworkId;
+    QJsonObject metadata;
+};
+
+enum class ImportedFaceSide {
+    Front,
+    Back,
+};
+
+struct ImportedFace {
+    ImportedFaceSide side{ImportedFaceSide::Front};
+    ImportedAsset asset;
+    std::optional<QString> providerAssetId;
+    std::optional<QString> selectedArtworkId;
+    std::optional<QString> name;
+    std::optional<QString> query;
+    QStringList slots;
+    QJsonObject metadata;
+};
+
+struct ImportedFaceAssociation {
+    QString slot;
+    std::optional<QString> frontAssetId;
+    std::optional<QString> backAssetId;
+};
+
 enum class ImportedEntryKind {
     DeckCard,
     CustomCard,
@@ -118,6 +156,13 @@ struct ImportedEntry {
     std::optional<ImportedCardHint> cardHint;
     std::optional<QString> nameSuggestion;
     std::optional<QString> section;
+    std::optional<ImportedAsset> asset;
+    std::optional<ImportedAsset> cardbackAsset;
+    std::optional<ImportedFace> front;
+    std::optional<ImportedFace> back;
+    std::vector<ImportedFace> faces;
+    std::vector<ImportedFaceAssociation> faceAssociations;
+    QStringList slots;
     QJsonObject metadata;
 };
 
@@ -166,6 +211,7 @@ struct ImporterOutput {
     std::vector<ImportedEntry> entries;
     std::vector<ImportWarning> warnings;
     std::vector<ImportMapping> mappings;
+    QJsonObject metadata;
 };
 
 QString importKindName(ImportKind kind);

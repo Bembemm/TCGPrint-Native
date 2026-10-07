@@ -39,4 +39,9 @@ ImporterOutput importGenericXml(
     const ImportLimitOverrides& limitOverrides = {}
 );
 
+ImporterOutput importMpcAutofillXml(
+    const ImportSource& source,
+    const ImportLimitOverrides& limitOverrides = {}
+);
+
 } // namespace tcgprint::imports
