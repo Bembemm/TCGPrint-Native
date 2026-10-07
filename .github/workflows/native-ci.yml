@@ -74,9 +74,16 @@ jobs:
           arch: win64_msvc2022_64
           cache: true
 
+      - name: Install ZLIB
+        shell: pwsh
+        run: vcpkg install zlib:x64-windows-static-md
+
       - name: Configure
         shell: pwsh
-        run: cmake --preset windows-release
+        run: |
+          $vcpkgRoot = Split-Path (Get-Command vcpkg).Source
+          $toolchain = Join-Path $vcpkgRoot "scripts/buildsystems/vcpkg.cmake"
+          cmake --preset windows-release "-DCMAKE_TOOLCHAIN_FILE=$toolchain" "-DVCPKG_TARGET_TRIPLET=x64-windows-static-md"
 
       - name: Build
         shell: pwsh
