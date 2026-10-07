@@ -139,6 +139,8 @@ add_library(tcgprint_import STATIC
     src/import/DirectFileUrlImport.cpp
     src/import/ScryfallUrlImport.h
     src/import/ScryfallUrlImport.cpp
+    src/import/ArchidektUrlImport.h
+    src/import/ArchidektUrlImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -533,6 +535,23 @@ target_link_libraries(tcgprint_import_scryfall_url_tests
 add_test(
     NAME tcgprint_import_scryfall_url_tests
     COMMAND tcgprint_import_scryfall_url_tests
+)
+
+qt_add_executable(tcgprint_import_archidekt_url_tests
+    tests/import/ArchidektUrlImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_archidekt_url_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Network
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_import_archidekt_url_tests
+    COMMAND tcgprint_import_archidekt_url_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
