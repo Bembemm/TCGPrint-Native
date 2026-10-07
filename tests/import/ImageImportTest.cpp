@@ -41,11 +41,12 @@ QByteArray rasterBytes(
 
     QByteArray bytes;
     QBuffer buffer(&bytes);
-    QVERIFY(buffer.open(QIODevice::WriteOnly));
-    QVERIFY2(
-        image.save(&buffer, format),
-        format
-    );
+    if (!buffer.open(QIODevice::WriteOnly)) {
+        return {};
+    }
+    if (!image.save(&buffer, format)) {
+        return {};
+    }
     return bytes;
 }
 
@@ -91,6 +92,10 @@ private slots:
                     item.width,
                     item.height
                 );
+            QVERIFY2(
+                !bytes.isEmpty(),
+                item.writerFormat
+            );
             const ImporterOutput result =
                 importImageSource(
                     source(bytes, item.filename)
@@ -142,6 +147,7 @@ private slots:
     {
         const QByteArray jpeg =
             rasterBytes("JPEG", 5, 7);
+        QVERIFY(!jpeg.isEmpty());
         const ImporterOutput result =
             importImageSource(
                 source(
@@ -252,6 +258,7 @@ private slots:
     {
         const QByteArray png =
             rasterBytes("PNG", 4, 3);
+        QVERIFY(!png.isEmpty());
 
         ImportLimitOverrides bytesLimit;
         bytesLimit.maxInputBytes =
