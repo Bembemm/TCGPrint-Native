@@ -243,7 +243,7 @@ private slots:
             static_cast<int>(ImportedEntryKind::MpcOrderCard)
         );
         QCOMPARE(
-            result.entries[0].slots,
+            result.entries[0].slotIds,
             QStringList({QStringLiteral("2"), QStringLiteral("1")})
         );
         QVERIFY(result.entries[0].front.has_value());

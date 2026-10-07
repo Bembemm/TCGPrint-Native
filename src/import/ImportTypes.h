@@ -127,7 +127,7 @@ struct ImportedFace {
     std::optional<QString> selectedArtworkId;
     std::optional<QString> name;
     std::optional<QString> query;
-    QStringList slots;
+    QStringList slotIds;
     QJsonObject metadata;
 };
 
@@ -162,7 +162,7 @@ struct ImportedEntry {
     std::optional<ImportedFace> back;
     std::vector<ImportedFace> faces;
     std::vector<ImportedFaceAssociation> faceAssociations;
-    QStringList slots;
+    QStringList slotIds;
     QJsonObject metadata;
 };
 

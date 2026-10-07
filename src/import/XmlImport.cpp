@@ -316,7 +316,7 @@ QJsonObject importedAssetJson(const ImportedAsset& asset)
 struct MpcCardRecord {
     ImportedFaceSide side{ImportedFaceSide::Front};
     int ordinal{0};
-    QStringList slots;
+    QStringList slotIds;
     std::uint64_t quantity{1};
     std::optional<QString> providerId;
     std::optional<QString> name;
@@ -397,7 +397,7 @@ std::vector<MpcCardRecord> parseMpcCardRecords(
             });
         }
 
-        const QStringList slots =
+        const QStringList slotIds =
             !pluralSlots.isEmpty()
             ? pluralSlots
             : singularSlots;
@@ -439,12 +439,12 @@ std::vector<MpcCardRecord> parseMpcCardRecords(
         }
 
         const std::uint64_t quantity =
-            !slots.isEmpty()
-            ? static_cast<std::uint64_t>(slots.size())
+            !slotIds.isEmpty()
+            ? static_cast<std::uint64_t>(slotIds.size())
             : explicitQuantity.value_or(1);
 
         if (
-            slots.isEmpty()
+            slotIds.isEmpty()
             && !explicitQuantity.has_value()
         ) {
             warnings.push_back(ImportWarning{
@@ -458,9 +458,9 @@ std::vector<MpcCardRecord> parseMpcCardRecords(
             });
         } else if (
             explicitQuantity.has_value()
-            && !slots.isEmpty()
+            && !slotIds.isEmpty()
             && *explicitQuantity
-                != static_cast<std::uint64_t>(slots.size())
+                != static_cast<std::uint64_t>(slotIds.size())
         ) {
             warnings.push_back(ImportWarning{
                 .code = QStringLiteral(
@@ -514,7 +514,7 @@ std::vector<MpcCardRecord> parseMpcCardRecords(
             .selectedArtworkId = providerId,
             .name = name,
             .query = query,
-            .slots = slots,
+            .slotIds = slotIds,
             .metadata = QJsonObject{
                 {
                     QStringLiteral("rawFields"),
@@ -526,7 +526,7 @@ std::vector<MpcCardRecord> parseMpcCardRecords(
         records.push_back(MpcCardRecord{
             .side = side,
             .ordinal = ordinal,
-            .slots = slots,
+            .slotIds = slotIds,
             .quantity = quantity,
             .providerId = providerId,
             .name = name,
@@ -555,10 +555,10 @@ ImportedEntry entryForMpcCard(
     std::vector<ImportedFaceAssociation> associations;
 
     if (front != nullptr) {
-        for (const QString& slot : front->slots) {
+        for (const QString& slot : front->slotIds) {
             std::vector<const MpcCardRecord*> matches;
             for (const MpcCardRecord* back : backRecords) {
-                if (back->slots.contains(slot)) {
+                if (back->slotIds.contains(slot)) {
                     matches.push_back(back);
                 }
             }
@@ -622,7 +622,7 @@ ImportedEntry entryForMpcCard(
 
     if (front != nullptr) {
         entry.front = front->face;
-        entry.slots = front->slots;
+        entry.slotIds = front->slotIds;
         entry.faces.push_back(front->face);
         if (front->name.has_value()) {
             entry.nameSuggestion = front->name;
@@ -631,7 +631,7 @@ ImportedEntry entryForMpcCard(
             };
         }
     } else if (primary != nullptr) {
-        entry.slots = primary->slots;
+        entry.slotIds = primary->slotIds;
     }
 
     if (cardbackAsset.has_value()) {
@@ -853,7 +853,7 @@ ImporterOutput importMpcAutofillXml(
 
     std::map<QString, int> frontSlotCounts;
     for (const MpcCardRecord& front : fronts) {
-        for (const QString& slot : front.slots) {
+        for (const QString& slot : front.slotIds) {
             ++frontSlotCounts[slot];
         }
     }
@@ -865,7 +865,7 @@ ImporterOutput importMpcAutofillXml(
     ) {
         const MpcCardRecord& front = fronts[index];
         QSet<QString> ambiguousFrontSlots;
-        for (const QString& slot : front.slots) {
+        for (const QString& slot : front.slotIds) {
             if (frontSlotCounts[slot] != 1) {
                 ambiguousFrontSlots.insert(slot);
                 output.warnings.push_back(ImportWarning{
@@ -885,7 +885,7 @@ ImporterOutput importMpcAutofillXml(
         std::vector<const MpcCardRecord*> candidateBacks;
         for (const MpcCardRecord& back : backs) {
             bool containsAmbiguous = false;
-            for (const QString& slot : back.slots) {
+            for (const QString& slot : back.slotIds) {
                 if (ambiguousFrontSlots.contains(slot)) {
                     containsAmbiguous = true;
                     break;
