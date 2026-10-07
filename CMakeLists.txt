@@ -23,6 +23,8 @@ find_package(
         Test
 )
 
+find_package(ZLIB REQUIRED)
+
 if(QT_KNOWN_POLICY_QTP0001)
     qt_policy(SET QTP0001 NEW)
 endif()
@@ -124,6 +126,8 @@ add_library(tcgprint_import STATIC
     src/import/XmlImport.cpp
     src/import/ImageImport.h
     src/import/ImageImport.cpp
+    src/import/ZipImport.h
+    src/import/ZipImport.cpp
 )
 
 target_include_directories(tcgprint_import
@@ -135,6 +139,8 @@ target_link_libraries(tcgprint_import
     PUBLIC
         Qt6::Core
         Qt6::Gui
+    PRIVATE
+        ZLIB::ZLIB
 )
 
 target_compile_features(tcgprint_import PUBLIC cxx_std_23)
@@ -414,6 +420,24 @@ target_link_libraries(tcgprint_import_image_tests
 add_test(
     NAME tcgprint_import_image_tests
     COMMAND tcgprint_import_image_tests
+)
+
+
+qt_add_executable(tcgprint_import_zip_tests
+    tests/import/ZipImportTest.cpp
+)
+
+target_link_libraries(tcgprint_import_zip_tests
+    PRIVATE
+        tcgprint_import
+        Qt6::Core
+        Qt6::Test
+        ZLIB::ZLIB
+)
+
+add_test(
+    NAME tcgprint_import_zip_tests
+    COMMAND tcgprint_import_zip_tests
 )
 
 qt_add_executable(tcgprint_benchmarks
