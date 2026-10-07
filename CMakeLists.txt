@@ -56,6 +56,24 @@ target_include_directories(tcgprint_domain
 
 target_compile_features(tcgprint_domain PUBLIC cxx_std_23)
 
+add_library(tcgprint_identity STATIC
+    src/identity/ScryfallIdentity.h
+    src/identity/ScryfallIdentity.cpp
+)
+
+target_include_directories(tcgprint_identity
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(tcgprint_identity
+    PUBLIC
+        tcgprint_domain
+        Qt6::Core
+)
+
+target_compile_features(tcgprint_identity PUBLIC cxx_std_23)
+
 add_library(tcgprint_projects STATIC
     src/persistence/projects/ProjectSnapshot.h
     src/persistence/projects/ProjectSnapshot.cpp
@@ -305,6 +323,22 @@ target_link_libraries(tcgprint_working_set_tests
 add_test(
     NAME tcgprint_working_set_tests
     COMMAND tcgprint_working_set_tests
+)
+
+qt_add_executable(tcgprint_scryfall_identity_tests
+    tests/identity/ScryfallIdentityTest.cpp
+)
+
+target_link_libraries(tcgprint_scryfall_identity_tests
+    PRIVATE
+        tcgprint_identity
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(
+    NAME tcgprint_scryfall_identity_tests
+    COMMAND tcgprint_scryfall_identity_tests
 )
 
 qt_add_executable(tcgprint_background_job_tests
